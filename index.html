@@ -104,10 +104,10 @@ pre{
   color:#b45309
 }
 
-hr{
-  border:0;
-  border-top:1px solid #e5e7eb;
-  margin:18px 0
+.timebox{
+  font-size:32px;
+  font-weight:700;
+  margin:10px 0
 }
 </style>
 </head>
@@ -118,157 +118,152 @@ hr{
 
 <div class="card">
 
-  <h1>🌡️ LYWSD02MMC BLE Monitor</h1>
+<h1>🌡️ LYWSD02MMC BLE Monitor</h1>
 
-  <p class="muted">
-    Xiaomi / Mijia LYWSD02MMC 即時溫濕度監控
-  </p>
+<p class="muted">
+Xiaomi / Mijia LYWSD02MMC
+</p>
 
-  <button id="connect">
-    🔵 Connect Bluetooth
-  </button>
+<button id="connect">
+🔵 Connect Bluetooth
+</button>
 
-  <button id="disconnect" disabled>
-    Disconnect
-  </button>
+<button id="disconnect" disabled>
+Disconnect
+</button>
 
-  <p id="status">尚未連線</p>
-
-</div>
-
-
-<div class="card">
-
-  <h2>📊 即時數值</h2>
-
-  <div class="grid">
-
-    <div class="metric">
-
-      <div class="label">
-        🌡️ Temperature
-      </div>
-
-      <div class="value">
-        <span id="temperature">--</span>
-      </div>
-
-      <div class="unit">
-        °C
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="label">
-        💧 Humidity
-      </div>
-
-      <div class="value">
-        <span id="humidity">--</span>
-      </div>
-
-      <div class="unit">
-        %
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="label">
-        🔋 Battery Voltage
-      </div>
-
-      <div class="value">
-        <span id="voltage">--</span>
-      </div>
-
-      <div class="unit">
-        V
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="label">
-        🔋 Battery %
-      </div>
-
-      <div class="value">
-        <span id="battery">--</span>
-      </div>
-
-      <div class="unit">
-        裝置回報值
-      </div>
-
-    </div>
-
-  </div>
-
-  <div class="small">
-    最後更新：
-    <span id="lastUpdate">--</span>
-  </div>
+<p id="status">尚未連線</p>
 
 </div>
 
 
 <div class="card">
 
-  <h2>📱 Device</h2>
+<h2>📊 即時數值</h2>
 
-  <pre id="device">--</pre>
+<div class="grid">
+
+<div class="metric">
+<div class="label">🌡️ Temperature</div>
+<div class="value">
+<span id="temperature">--</span>
+</div>
+<div class="unit">°C</div>
+</div>
+
+<div class="metric">
+<div class="label">💧 Humidity</div>
+<div class="value">
+<span id="humidity">--</span>
+</div>
+<div class="unit">%</div>
+</div>
+
+<div class="metric">
+<div class="label">🔋 Battery Voltage</div>
+<div class="value">
+<span id="voltage">--</span>
+</div>
+<div class="unit">V</div>
+</div>
+
+<div class="metric">
+<div class="label">🔋 Battery %</div>
+<div class="value">
+<span id="battery">--</span>
+</div>
+<div class="unit">裝置回報</div>
+</div>
+
+</div>
+
+<div class="small">
+最後更新：
+<span id="lastUpdate">--</span>
+</div>
 
 </div>
 
 
 <div class="card">
 
-  <h2>📡 即時 CCC1 資料</h2>
+<h2>🕒 時間同步</h2>
 
-  <p class="muted">
-    EBE0CCC1-7A0A-4B0C-8A1A-6FF2997DA3A6
-  </p>
+<div class="label">
+瀏覽器目前時間
+</div>
 
-  <pre id="notification">尚未收到資料</pre>
+<div class="timebox" id="localTime">
+--
+</div>
+
+<button id="syncTime" disabled>
+🔄 同步裝置時間
+</button>
+
+<p id="timeStatus" class="muted">
+尚未同步
+</p>
+
+<pre id="timeVerify">尚未驗證</pre>
 
 </div>
 
 
 <div class="card">
 
-  <h2>🔋 Battery CCC4</h2>
+<h2>📱 Device</h2>
 
-  <p class="muted">
-    EBE0CCC4-7A0A-4B0C-8A1A-6FF2997DA3A6
-  </p>
-
-  <pre id="batteryRaw">尚未讀取</pre>
+<pre id="device">--</pre>
 
 </div>
 
 
 <div class="card">
 
-  <h2>🔧 GATT Services / Characteristics</h2>
+<h2>📡 CCC1 即時資料</h2>
 
-  <pre id="gatt">尚未連線</pre>
+<p class="muted">
+EBE0CCC1-7A0A-4B0C-8A1A-6FF2997DA3A6
+</p>
+
+<pre id="notification">尚未收到資料</pre>
 
 </div>
 
 
 <div class="card">
 
-  <h2>📝 Log</h2>
+<h2>🔋 CCC4 Battery</h2>
 
-  <pre id="log"></pre>
+<pre id="batteryRaw">尚未讀取</pre>
+
+</div>
+
+
+<div class="card">
+
+<h2>🕒 時間 Characteristic</h2>
+
+<pre id="timeChars">尚未偵測</pre>
+
+</div>
+
+
+<div class="card">
+
+<h2>🔧 GATT Services / Characteristics</h2>
+
+<pre id="gatt">尚未連線</pre>
+
+</div>
+
+
+<div class="card">
+
+<h2>📝 Log</h2>
+
+<pre id="log"></pre>
 
 </div>
 
@@ -282,7 +277,7 @@ const $ = id =>
 
 
 /* ==================================================
-   Xiaomi LYWSD02MMC UUID
+   UUID
 ================================================== */
 
 const SERVICE_UUID =
@@ -290,27 +285,47 @@ const SERVICE_UUID =
 
 
 /*
- * 即時：
- *
- * byte 0-1 = temperature
- * byte 2   = humidity
- * byte 3-4 = battery voltage
+ * 即時溫濕度 / 電池電壓
  */
 const DATA_UUID =
   "ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6";
 
 
 /*
- * Battery percentage
+ * Battery %
  */
 const BATTERY_UUID =
   "ebe0ccc4-7a0a-4b0c-8a1a-6ff2997da3a6";
 
 
+/*
+ * ★ 真正的時間 characteristic
+ */
+const TIME_UUID =
+  "ebe0ccb7-7a0a-4b0c-8a1a-6ff2997da3a6";
+
+
+/*
+ * 額外自動偵測
+ */
+const CCA4_UUID =
+  "ebe0cca4-7a0a-4b0c-8a1a-6ff2997da3a6";
+
+const CCD7_UUID =
+  "ebe0ccd7-7a0a-4b0c-8a1a-6ff2997da3a6";
+
+
 let device = null;
 let server = null;
+
+let service = null;
+
 let dataCharacteristic = null;
 let batteryCharacteristic = null;
+let timeCharacteristic = null;
+
+let cca4Characteristic = null;
+let ccd7Characteristic = null;
 
 
 /* ==================================================
@@ -341,8 +356,7 @@ function dataViewToHex(view){
   for(let i = 0; i < view.byteLength; i++){
 
     bytes.push(
-      view
-        .getUint8(i)
+      view.getUint8(i)
         .toString(16)
         .padStart(2,"0")
     );
@@ -354,7 +368,7 @@ function dataViewToHex(view){
 
 
 /* ==================================================
-   CCC1 即時資料解析
+   CCC1
 ================================================== */
 
 function parseSensorData(event){
@@ -371,7 +385,6 @@ function parseSensorData(event){
     );
 
     return;
-
   }
 
 
@@ -379,50 +392,25 @@ function parseSensorData(event){
     dataViewToHex(value);
 
 
-  /*
-   * LYWSD02MMC：
-   *
-   * bytes 0-1:
-   * signed little-endian
-   *
-   * temperature = raw / 100
-   */
-
   const temperatureRaw =
-    value.getInt16(0, true);
+    value.getInt16(0,true);
 
 
   const temperature =
     temperatureRaw / 100;
 
 
-  /*
-   * byte 2:
-   * relative humidity %
-   */
-
   const humidity =
     value.getUint8(2);
 
 
-  /*
-   * bytes 3-4:
-   * unsigned little-endian
-   *
-   * battery voltage in mV
-   */
-
   const voltageMv =
-    value.getUint16(3, true);
+    value.getUint16(3,true);
 
 
   const voltage =
     voltageMv / 1000;
 
-
-  /*
-   * 顯示
-   */
 
   $("temperature").textContent =
     temperature.toFixed(2);
@@ -439,10 +427,6 @@ function parseSensorData(event){
   $("lastUpdate").textContent =
     new Date().toLocaleTimeString();
 
-
-  /*
-   * 顯示完整封包
-   */
 
   $("notification").textContent =
     "HEX: " + hex + "\n" +
@@ -472,29 +456,29 @@ function parseSensorData(event){
     `CCC1 = ${hex}`
   );
 
-
   log(
     `Temperature = ${temperature.toFixed(2)} °C`
   );
-
 
   log(
     `Humidity = ${humidity} %`
   );
 
-
   log(
     `Battery voltage = ${voltageMv} mV`
   );
-
 }
 
 
 /* ==================================================
-   Battery percentage
+   Battery
 ================================================== */
 
 async function readBatteryPercentage(){
+
+  if(!batteryCharacteristic)
+    return;
+
 
   try{
 
@@ -502,15 +486,8 @@ async function readBatteryPercentage(){
       await batteryCharacteristic.readValue();
 
 
-    if(value.byteLength < 1){
-
-      log(
-        "CCC4 沒有資料"
-      );
-
+    if(value.byteLength < 1)
       return;
-
-    }
 
 
     const percent =
@@ -544,12 +521,677 @@ async function readBatteryPercentage(){
     );
 
   }
+}
+
+
+/* ==================================================
+   Local time display
+================================================== */
+
+function updateLocalTime(){
+
+  $("localTime").textContent =
+    new Date().toLocaleString(
+      "zh-TW",
+      {
+        year:"numeric",
+        month:"2-digit",
+        day:"2-digit",
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit",
+        hour12:false
+      }
+    );
+}
+
+
+setInterval(
+  updateLocalTime,
+  1000
+);
+
+updateLocalTime();
+
+
+/* ==================================================
+   UTC offset
+================================================== */
+
+function getUTCOffsetHours(){
+
+  /*
+   * getTimezoneOffset:
+   * UTC - local
+   *
+   * 所以要反過來。
+   *
+   * Taiwan:
+   * -480 -> +8
+   */
+
+  const minutes =
+    -new Date().getTimezoneOffset();
+
+
+  /*
+   * LYWSD02 protocol 使用整數 timezone。
+   *
+   * 如果遇到半小時時區，
+   * 額外保留 half-hour byte。
+   */
+
+  return minutes / 60;
+}
+
+
+/* ==================================================
+   建立時間封包
+================================================== */
+
+function createTimePacket(){
+
+  /*
+   * Protocol:
+   *
+   * byte 0-3:
+   * Unix timestamp
+   * little endian
+   *
+   * byte 4:
+   * UTC offset
+   */
+
+  const now =
+    Math.floor(Date.now() / 1000);
+
+
+  const offset =
+    getUTCOffsetHours();
+
+
+  const buffer =
+    new ArrayBuffer(5);
+
+
+  const view =
+    new DataView(buffer);
+
+
+  view.setUint32(
+    0,
+    now,
+    true
+  );
+
+
+  /*
+   * LYWSD02 的 timezone 欄位是 signed 8-bit。
+   */
+
+  view.setInt8(
+    4,
+    offset
+  );
+
+
+  return {
+    buffer,
+    timestamp:now,
+    offset
+  };
+}
+
+
+/* ==================================================
+   Decode time
+================================================== */
+
+function decodeTimePacket(value){
+
+  if(value.byteLength < 5){
+
+    return null;
+
+  }
+
+
+  const timestamp =
+    value.getUint32(0,true);
+
+
+  const offset =
+    value.getInt8(4);
+
+
+  /*
+   * timestamp 是 UTC Unix timestamp。
+   *
+   * 加上裝置 timezone 後，
+   * 轉成顯示用時間。
+   */
+
+  const localMs =
+    (timestamp + offset * 3600) * 1000;
+
+
+  const date =
+    new Date(localMs);
+
+
+  return {
+    timestamp,
+    offset,
+    date
+  };
+}
+
+
+/* ==================================================
+   Format date
+================================================== */
+
+function formatDate(date){
+
+  return date.toLocaleString(
+    "zh-TW",
+    {
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit",
+      hour:"2-digit",
+      minute:"2-digit",
+      second:"2-digit",
+      hour12:false
+    }
+  );
+}
+
+
+/* ==================================================
+   自動偵測 CCA4 / CCD7
+================================================== */
+
+async function detectExtraCharacteristics(){
+
+  $("timeChars").textContent =
+    "偵測中...\n";
+
+
+  /*
+   * CCA4
+   */
+
+  try{
+
+    cca4Characteristic =
+      await service.getCharacteristic(
+        CCA4_UUID
+      );
+
+
+    $("timeChars").textContent +=
+      "CCA4: FOUND\n" +
+      "properties: " +
+      JSON.stringify(
+        cca4Characteristic.properties
+      ) +
+      "\n";
+
+
+    if(
+      cca4Characteristic.properties.read
+    ){
+
+      try{
+
+        const value =
+          await cca4Characteristic.readValue();
+
+
+        $("timeChars").textContent +=
+          "CCA4 READ: " +
+          dataViewToHex(value) +
+          "\n";
+
+        log(
+          "CCA4 READ = " +
+          dataViewToHex(value)
+        );
+
+      }catch(error){
+
+        $("timeChars").textContent +=
+          "CCA4 READ ERROR: " +
+          error.message +
+          "\n";
+
+      }
+
+    }
+
+  }catch(error){
+
+    cca4Characteristic = null;
+
+    $("timeChars").textContent +=
+      "CCA4: NOT AVAILABLE\n";
+
+  }
+
+
+  /*
+   * CCD7
+   */
+
+  try{
+
+    ccd7Characteristic =
+      await service.getCharacteristic(
+        CCD7_UUID
+      );
+
+
+    $("timeChars").textContent +=
+      "CCD7: FOUND\n" +
+      "properties: " +
+      JSON.stringify(
+        ccd7Characteristic.properties
+      ) +
+      "\n";
+
+
+    if(
+      ccd7Characteristic.properties.read
+    ){
+
+      try{
+
+        const value =
+          await ccd7Characteristic.readValue();
+
+
+        $("timeChars").textContent +=
+          "CCD7 READ: " +
+          dataViewToHex(value) +
+          "\n";
+
+        log(
+          "CCD7 READ = " +
+          dataViewToHex(value)
+        );
+
+      }catch(error){
+
+        $("timeChars").textContent +=
+          "CCD7 READ ERROR: " +
+          error.message +
+          "\n";
+
+      }
+
+    }
+
+  }catch(error){
+
+    ccd7Characteristic = null;
+
+    $("timeChars").textContent +=
+      "CCD7: NOT AVAILABLE\n";
+
+  }
+
+
+  /*
+   * 真正的 CCB7
+   */
+
+  try{
+
+    timeCharacteristic =
+      await service.getCharacteristic(
+        TIME_UUID
+      );
+
+
+    $("timeChars").textContent +=
+      "\nCCB7: FOUND (TIME)\n" +
+      "properties: " +
+      JSON.stringify(
+        timeCharacteristic.properties
+      ) +
+      "\n";
+
+
+    if(
+      timeCharacteristic.properties.read
+    ){
+
+      try{
+
+        const value =
+          await timeCharacteristic.readValue();
+
+
+        const hex =
+          dataViewToHex(value);
+
+
+        $("timeChars").textContent +=
+          "CCB7 READ: " +
+          hex +
+          "\n";
+
+
+        log(
+          "CCB7 READ = " + hex
+        );
+
+
+        const decoded =
+          decodeTimePacket(value);
+
+
+        if(decoded){
+
+          $("timeChars").textContent +=
+            "Device time: " +
+            formatDate(decoded.date) +
+            "\n" +
+
+            "UTC offset: " +
+            decoded.offset +
+            "\n";
+
+        }
+
+
+      }catch(error){
+
+        $("timeChars").textContent +=
+          "CCB7 READ ERROR: " +
+          error.message +
+          "\n";
+
+      }
+
+    }
+
+
+  }catch(error){
+
+    timeCharacteristic = null;
+
+    $("timeChars").textContent +=
+      "\nCCB7: NOT AVAILABLE\n";
+
+    log(
+      "CCB7 不可用: " +
+      error.message
+    );
+
+  }
 
 }
 
 
 /* ==================================================
-   探索 GATT
+   ★ 同步時間
+================================================== */
+
+async function syncTime(){
+
+  if(!timeCharacteristic){
+
+    $("timeStatus").innerHTML =
+      '<span class="err">' +
+      '找不到 CCB7 時間 characteristic' +
+      '</span>';
+
+    return;
+  }
+
+
+  if(
+    !timeCharacteristic.properties.write
+  ){
+
+    $("timeStatus").innerHTML =
+      '<span class="err">' +
+      'CCB7 不支援 write' +
+      '</span>';
+
+    return;
+  }
+
+
+  const {
+    buffer,
+    timestamp,
+    offset
+  } =
+    createTimePacket();
+
+
+  const packetView =
+    new DataView(buffer);
+
+
+  const packetHex =
+    dataViewToHex(packetView);
+
+
+  $("timeStatus").innerHTML =
+    '<span class="warn">' +
+    '正在同步...' +
+    '</span>';
+
+
+  $("timeVerify").textContent =
+    "Write packet:\n" +
+    packetHex +
+    "\n\n" +
+
+    "Timestamp:\n" +
+    timestamp +
+    "\n\n" +
+
+    "UTC offset:\n" +
+    offset;
+
+
+  try{
+
+    log(
+      "開始同步時間"
+    );
+
+
+    log(
+      "CCB7 WRITE = " +
+      packetHex
+    );
+
+
+    /*
+     * Web Bluetooth 新 API 優先使用
+     * writeValueWithResponse。
+     */
+
+    if(
+      "writeValueWithResponse" in
+      timeCharacteristic
+    ){
+
+      await timeCharacteristic
+        .writeValueWithResponse(
+          buffer
+        );
+
+    }else{
+
+      await timeCharacteristic
+        .writeValue(
+          buffer
+        );
+
+    }
+
+
+    log(
+      "CCB7 WRITE 完成"
+    );
+
+
+    /*
+     * 等裝置處理
+     */
+
+    await new Promise(
+      resolve =>
+        setTimeout(resolve,500)
+    );
+
+
+    /*
+     * 寫入後重新讀取驗證
+     */
+
+    if(
+      timeCharacteristic.properties.read
+    ){
+
+      const verify =
+        await timeCharacteristic.readValue();
+
+
+      const verifyHex =
+        dataViewToHex(verify);
+
+
+      const decoded =
+        decodeTimePacket(verify);
+
+
+      $("timeVerify").textContent =
+        "Write packet:\n" +
+        packetHex +
+        "\n\n" +
+
+        "Read-back packet:\n" +
+        verifyHex;
+
+
+      if(decoded){
+
+        $("timeVerify").textContent +=
+          "\n\n" +
+
+          "Device timestamp:\n" +
+          decoded.timestamp +
+          "\n\n" +
+
+          "Device UTC offset:\n" +
+          decoded.offset +
+          "\n\n" +
+
+          "Device local time:\n" +
+          formatDate(decoded.date);
+
+
+        log(
+          "CCB7 READ-BACK = " +
+          verifyHex
+        );
+
+
+        /*
+         * 驗證 timestamp 差距
+         */
+
+        const difference =
+          Math.abs(
+            decoded.timestamp -
+            timestamp
+          );
+
+
+        if(difference <= 3){
+
+          $("timeStatus").innerHTML =
+            '<span class="ok">' +
+            '✓ 時間同步成功，讀回驗證通過' +
+            '</span>';
+
+
+          log(
+            "✓ 時間驗證成功，差距 " +
+            difference +
+            " 秒"
+          );
+
+        }else{
+
+          $("timeStatus").innerHTML =
+            '<span class="warn">' +
+            '⚠ 已寫入，但讀回時間差 ' +
+            difference +
+            ' 秒' +
+            '</span>';
+
+
+          log(
+            "WARNING: timestamp difference = " +
+            difference +
+            " seconds"
+          );
+
+        }
+
+
+      }else{
+
+        $("timeStatus").innerHTML =
+          '<span class="warn">' +
+          '已寫入，但讀回資料格式無法解析' +
+          '</span>';
+
+      }
+
+
+    }else{
+
+      $("timeStatus").innerHTML =
+        '<span class="ok">' +
+        '✓ 時間已寫入（裝置不提供 read 驗證）' +
+        '</span>';
+
+    }
+
+
+  }catch(error){
+
+    log(
+      "TIME SYNC ERROR: " +
+      error.name +
+      " — " +
+      error.message
+    );
+
+
+    $("timeStatus").innerHTML =
+      '<span class="err">' +
+      '同步失敗：' +
+      error.message +
+      '</span>';
+
+  }
+
+}
+
+
+/* ==================================================
+   GATT 探索
 ================================================== */
 
 async function exploreGATT(server){
@@ -566,10 +1208,10 @@ async function exploreGATT(server){
   let output = "";
 
 
-  for(const service of services){
+  for(const s of services){
 
     output +=
-      `SERVICE\n${service.uuid}\n`;
+      `SERVICE\n${s.uuid}\n`;
 
 
     let chars = [];
@@ -578,12 +1220,12 @@ async function exploreGATT(server){
     try{
 
       chars =
-        await service.getCharacteristics();
+        await s.getCharacteristics();
 
     }catch(error){
 
       output +=
-        `  ERROR: ${error.message}\n\n`;
+        ` ERROR: ${error.message}\n\n`;
 
       continue;
 
@@ -591,7 +1233,7 @@ async function exploreGATT(server){
 
 
     output +=
-      `  Characteristics: ${chars.length}\n`;
+      ` Characteristics: ${chars.length}\n`;
 
 
     for(const c of chars){
@@ -619,7 +1261,7 @@ async function exploreGATT(server){
 
 
       output +=
-        `    ${c.uuid} ` +
+        `   ${c.uuid} ` +
         `[${p.join(", ")}]\n`;
 
     }
@@ -637,7 +1279,7 @@ async function exploreGATT(server){
 
 
 /* ==================================================
-   Connect
+   CONNECT
 ================================================== */
 
 async function connect(){
@@ -681,9 +1323,9 @@ async function connect(){
     device =
       await navigator.bluetooth.requestDevice({
 
-        acceptAllDevices: true,
+        acceptAllDevices:true,
 
-        optionalServices: [
+        optionalServices:[
 
           "generic_access",
           "generic_attribute",
@@ -705,12 +1347,6 @@ async function connect(){
       device.id;
 
 
-    $("status").innerHTML =
-      '<span class="ok">' +
-      '✓ 已選擇裝置' +
-      '</span>';
-
-
     log(
       "選到: " +
       (device.name || "(無名稱)")
@@ -729,8 +1365,11 @@ async function connect(){
     );
 
 
-    $("connect").disabled = true;
-    $("disconnect").disabled = false;
+    $("connect").disabled =
+      true;
+
+    $("disconnect").disabled =
+      false;
 
 
     log(
@@ -747,44 +1386,18 @@ async function connect(){
     );
 
 
-    $("status").innerHTML =
-      '<span class="ok">' +
-      '✓ GATT 已連線' +
-      '</span>';
-
-
-    /*
-     * GATT 探索
-     */
-
-    await exploreGATT(server);
-
-
-    /*
-     * 取得 Xiaomi service
-     */
-
-    log(
-      "取得 EBE0CCB0 service..."
-    );
-
-
-    const service =
+    service =
       await server.getPrimaryService(
         SERVICE_UUID
       );
 
 
+    await exploreGATT(server);
+
+
     /*
-     * ============================================
      * CCC1
-     * ============================================
      */
-
-    log(
-      "取得 EBE0CCC1..."
-    );
-
 
     dataCharacteristic =
       await service.getCharacteristic(
@@ -792,21 +1405,14 @@ async function connect(){
       );
 
 
-    /*
-     * 註冊 notification
-     */
-
     dataCharacteristic.addEventListener(
       "characteristicvaluechanged",
       parseSensorData
     );
 
 
-    /*
-     * 啟用 notification
-     */
-
-    await dataCharacteristic.startNotifications();
+    await dataCharacteristic
+      .startNotifications();
 
 
     log(
@@ -815,9 +1421,7 @@ async function connect(){
 
 
     /*
-     * ============================================
      * CCC4
-     * ============================================
      */
 
     try{
@@ -827,28 +1431,54 @@ async function connect(){
           BATTERY_UUID
         );
 
-
-      log(
-        "取得 EBE0CCC4"
-      );
-
-
       await readBatteryPercentage();
 
     }catch(error){
 
       log(
-        "CCC4 無法讀取: " +
+        "CCC4 不可用: " +
         error.message
       );
 
     }
 
 
+    /*
+     * ★ 自動偵測 CCA4 / CCD7 / CCB7
+     */
+
+    await detectExtraCharacteristics();
+
+
+    /*
+     * 同步按鈕啟用
+     */
+
+    $("syncTime").disabled =
+      !timeCharacteristic;
+
+
     $("status").innerHTML =
       '<span class="ok">' +
-      '✓ 已連線，等待 CCC1 資料...' +
+      '✓ 已連線' +
       '</span>';
+
+
+    if(timeCharacteristic){
+
+      $("timeStatus").innerHTML =
+        '<span class="ok">' +
+        '✓ 已找到 CCB7，可以同步時間' +
+        '</span>';
+
+    }else{
+
+      $("timeStatus").innerHTML =
+        '<span class="err">' +
+        '找不到時間 characteristic' +
+        '</span>';
+
+    }
 
 
   }catch(error){
@@ -867,8 +1497,11 @@ async function connect(){
       '</span>';
 
 
-    $("connect").disabled = false;
-    $("disconnect").disabled = true;
+    $("connect").disabled =
+      false;
+
+    $("disconnect").disabled =
+      true;
 
   }
 
@@ -876,7 +1509,7 @@ async function connect(){
 
 
 /* ==================================================
-   Disconnected
+   DISCONNECT
 ================================================== */
 
 function disconnected(){
@@ -887,24 +1520,34 @@ function disconnected(){
 
 
   $("status").innerHTML =
-    '<span class="warn">' +
-    '已斷線' +
-    '</span>';
+    '<span class="warn">已斷線</span>';
 
 
-  $("connect").disabled = false;
-  $("disconnect").disabled = true;
+  $("connect").disabled =
+    false;
+
+
+  $("disconnect").disabled =
+    true;
+
+
+  $("syncTime").disabled =
+    true;
 
 
   dataCharacteristic = null;
   batteryCharacteristic = null;
+  timeCharacteristic = null;
+  cca4Characteristic = null;
+  ccd7Characteristic = null;
   server = null;
+  service = null;
 
 }
 
 
 /* ==================================================
-   Disconnect
+   DISCONNECT BUTTON
 ================================================== */
 
 async function disconnect(){
@@ -915,16 +1558,10 @@ async function disconnect(){
 
       try{
 
-        await dataCharacteristic.stopNotifications();
+        await dataCharacteristic
+          .stopNotifications();
 
-      }catch(error){
-
-        log(
-          "停止 CCC1 notification 失敗: " +
-          error.message
-        );
-
-      }
+      }catch(error){}
 
     }
 
@@ -934,11 +1571,6 @@ async function disconnect(){
       device.gatt &&
       device.gatt.connected
     ){
-
-      log(
-        "Disconnect..."
-      );
-
 
       device.gatt.disconnect();
 
@@ -957,7 +1589,7 @@ async function disconnect(){
 
 
 /* ==================================================
-   Buttons
+   BUTTONS
 ================================================== */
 
 $("connect").addEventListener(
@@ -972,8 +1604,14 @@ $("disconnect").addEventListener(
 );
 
 
+$("syncTime").addEventListener(
+  "click",
+  syncTime
+);
+
+
 /* ==================================================
-   Startup
+   START
 ================================================== */
 
 log("Ready");
