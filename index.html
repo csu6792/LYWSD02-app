@@ -1,0 +1,40 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BLE Test</title><style>
+body{font-family:system-ui,sans-serif;background:#f3f4f6;margin:0;padding:20px;color:#111827}main{max-width:800px;margin:auto}.card{background:#fff;padding:20px;border-radius:16px;margin-bottom:16px;box-shadow:0 3px 15px #0001}button{background:#111827;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-size:16px}pre{background:#111827;color:#d1d5db;padding:14px;border-radius:10px;overflow:auto;white-space:pre-wrap}.muted{color:#6b7280}.ok{color:#15803d}.err{color:#b91c1c}
+</style></head><body><main>
+<div class="card"><h1>LYWSD02MMC BLE 測試工具</h1><p class="muted">這版只測試 Web Bluetooth，不使用 Xiaomi UUID。</p><button id="connect">🔵 Connect Bluetooth</button><p id="status">尚未開始</p></div>
+<div class="card"><h2>Device</h2><pre id="device">--</pre></div>
+<div class="card"><h2>GATT Services / Characteristics</h2><pre id="gatt">尚未連線</pre></div>
+<div class="card"><h2>Log</h2><pre id="log"></pre></div>
+</main><script>
+const $=id=>document.getElementById(id);
+function log(s){$("log").textContent+="["+new Date().toLocaleTimeString()+"] "+s+"\n";}
+async function main(){
+ log("開始"); log("secure context = "+location.isSecureContext); log("navigator.bluetooth = "+("bluetooth" in navigator));
+ if(!("bluetooth" in navigator)){ $("status").innerHTML='<span class="err">沒有 navigator.bluetooth</span>'; return; }
+ try{
+  log("呼叫 requestDevice()");
+  const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:["generic_access","generic_attribute","battery_service"]});
+  $("status").innerHTML='<span class="ok">✓ 已選擇裝置</span>';
+  $("device").textContent="name: "+(device.name||"(無名稱)")+"\nid: "+device.id;
+  log("選到: "+(device.name||"(無名稱)")); log("id: "+device.id);
+  device.addEventListener("gattserverdisconnected",()=>{log("GATT disconnected");$("status").textContent="已斷線";});
+  log("開始 GATT connect...");
+  const server=await device.gatt.connect(); log("GATT connected");
+  const services=await server.getPrimaryServices(); log("Primary services: "+services.length);
+  let out="";
+  for(const service of services){
+   out+="SERVICE\n"+service.uuid+"\n";
+   try{
+    const chars=await service.getCharacteristics(); out+="  Characteristics: "+chars.length+"\n";
+    for(const c of chars){
+     const p=[]; if(c.properties.broadcast)p.push("broadcast"); if(c.properties.read)p.push("read"); if(c.properties.writeWithoutResponse)p.push("writeWithoutResponse"); if(c.properties.write)p.push("write"); if(c.properties.notify)p.push("notify"); if(c.properties.indicate)p.push("indicate");
+     out+="    "+c.uuid+" ["+p.join(", ")+"]\n";
+    }
+   }catch(e){out+="  ERROR: "+e.message+"\n";}
+   out+="\n";
+  }
+  $("gatt").textContent=out||"沒有 primary service"; $("status").innerHTML='<span class="ok">✓ GATT 探索完成</span>';
+ }catch(e){log("ERROR: "+e.name+" — "+e.message);$("status").innerHTML='<span class="err">'+e.name+" — "+e.message+"</span>";}
+}
+$("connect").onclick=main; log("Ready");
+</script></body></html>
