@@ -35,18 +35,14 @@ button{
   border-radius:10px;
   padding:12px 18px;
   font-size:16px;
-  cursor:pointer
+  cursor:pointer;
+  margin-right:8px;
+  margin-bottom:8px
 }
 
 button:disabled{
   opacity:.5;
   cursor:not-allowed
-}
-
-.value{
-  font-size:42px;
-  font-weight:700;
-  margin:8px 0
 }
 
 .grid{
@@ -64,6 +60,22 @@ button:disabled{
 .label{
   color:#6b7280;
   font-size:14px
+}
+
+.value{
+  font-size:38px;
+  font-weight:700;
+  margin:8px 0
+}
+
+.unit{
+  color:#6b7280
+}
+
+.small{
+  font-size:14px;
+  color:#6b7280;
+  margin-top:8px
 }
 
 pre{
@@ -105,10 +117,11 @@ hr{
 <main>
 
 <div class="card">
+
   <h1>🌡️ LYWSD02MMC BLE Monitor</h1>
 
   <p class="muted">
-    Xiaomi / Mijia BLE 溫濕度計測試工具
+    Xiaomi / Mijia LYWSD02MMC 即時溫濕度監控
   </p>
 
   <button id="connect">
@@ -120,39 +133,88 @@ hr{
   </button>
 
   <p id="status">尚未連線</p>
+
 </div>
 
 
 <div class="card">
 
-  <h2>即時數值</h2>
+  <h2>📊 即時數值</h2>
 
   <div class="grid">
 
     <div class="metric">
-      <div class="label">🌡️ Temperature</div>
+
+      <div class="label">
+        🌡️ Temperature
+      </div>
+
       <div class="value">
         <span id="temperature">--</span>
       </div>
-      <div>°C</div>
+
+      <div class="unit">
+        °C
+      </div>
+
     </div>
 
+
     <div class="metric">
-      <div class="label">💧 Humidity</div>
+
+      <div class="label">
+        💧 Humidity
+      </div>
+
       <div class="value">
         <span id="humidity">--</span>
       </div>
-      <div>%</div>
+
+      <div class="unit">
+        %
+      </div>
+
     </div>
 
+
     <div class="metric">
-      <div class="label">🔋 Battery</div>
+
+      <div class="label">
+        🔋 Battery Voltage
+      </div>
+
+      <div class="value">
+        <span id="voltage">--</span>
+      </div>
+
+      <div class="unit">
+        V
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="label">
+        🔋 Battery %
+      </div>
+
       <div class="value">
         <span id="battery">--</span>
       </div>
-      <div>%</div>
+
+      <div class="unit">
+        裝置回報值
+      </div>
+
     </div>
 
+  </div>
+
+  <div class="small">
+    最後更新：
+    <span id="lastUpdate">--</span>
   </div>
 
 </div>
@@ -160,7 +222,7 @@ hr{
 
 <div class="card">
 
-  <h2>Device</h2>
+  <h2>📱 Device</h2>
 
   <pre id="device">--</pre>
 
@@ -169,10 +231,10 @@ hr{
 
 <div class="card">
 
-  <h2>Notification</h2>
+  <h2>📡 即時 CCC1 資料</h2>
 
   <p class="muted">
-    EBE0CCBC
+    EBE0CCC1-7A0A-4B0C-8A1A-6FF2997DA3A6
   </p>
 
   <pre id="notification">尚未收到資料</pre>
@@ -182,7 +244,20 @@ hr{
 
 <div class="card">
 
-  <h2>GATT Services / Characteristics</h2>
+  <h2>🔋 Battery CCC4</h2>
+
+  <p class="muted">
+    EBE0CCC4-7A0A-4B0C-8A1A-6FF2997DA3A6
+  </p>
+
+  <pre id="batteryRaw">尚未讀取</pre>
+
+</div>
+
+
+<div class="card">
+
+  <h2>🔧 GATT Services / Characteristics</h2>
 
   <pre id="gatt">尚未連線</pre>
 
@@ -191,7 +266,7 @@ hr{
 
 <div class="card">
 
-  <h2>Log</h2>
+  <h2>📝 Log</h2>
 
   <pre id="log"></pre>
 
@@ -202,31 +277,45 @@ hr{
 
 <script>
 
-const $ = id => document.getElementById(id);
+const $ = id =>
+  document.getElementById(id);
 
 
-/*
- * 你的裝置實際掃到的 Service
- */
+/* ==================================================
+   Xiaomi LYWSD02MMC UUID
+================================================== */
+
 const SERVICE_UUID =
   "ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6";
 
 
 /*
- * 你的裝置實際掃到的 Notification characteristic
+ * 即時：
+ *
+ * byte 0-1 = temperature
+ * byte 2   = humidity
+ * byte 3-4 = battery voltage
  */
 const DATA_UUID =
-  "ebe0ccbc-7a0a-4b0c-8a1a-6ff2997da3a6";
+  "ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6";
+
+
+/*
+ * Battery percentage
+ */
+const BATTERY_UUID =
+  "ebe0ccc4-7a0a-4b0c-8a1a-6ff2997da3a6";
 
 
 let device = null;
 let server = null;
 let dataCharacteristic = null;
+let batteryCharacteristic = null;
 
 
-/* --------------------------------------------------
-   Log
--------------------------------------------------- */
+/* ==================================================
+   LOG
+================================================== */
 
 function log(message){
 
@@ -241,9 +330,9 @@ function log(message){
 }
 
 
-/* --------------------------------------------------
-   HEX helpers
--------------------------------------------------- */
+/* ==================================================
+   HEX
+================================================== */
 
 function dataViewToHex(view){
 
@@ -252,7 +341,8 @@ function dataViewToHex(view){
   for(let i = 0; i < view.byteLength; i++){
 
     bytes.push(
-      view.getUint8(i)
+      view
+        .getUint8(i)
         .toString(16)
         .padStart(2,"0")
     );
@@ -263,246 +353,204 @@ function dataViewToHex(view){
 }
 
 
-function dataViewToArray(view){
+/* ==================================================
+   CCC1 即時資料解析
+================================================== */
 
-  const result = [];
-
-  for(let i = 0; i < view.byteLength; i++){
-
-    result.push(view.getUint8(i));
-
-  }
-
-  return result;
-}
-
-
-/* --------------------------------------------------
-   Notification parser
--------------------------------------------------- */
-
-function parseNotification(event){
+function parseSensorData(event){
 
   const value =
     event.target.value;
 
-  const bytes =
-    dataViewToArray(value);
+
+  if(value.byteLength < 5){
+
+    log(
+      "CCC1 packet 太短: " +
+      dataViewToHex(value)
+    );
+
+    return;
+
+  }
+
 
   const hex =
     dataViewToHex(value);
 
 
+  /*
+   * LYWSD02MMC：
+   *
+   * bytes 0-1:
+   * signed little-endian
+   *
+   * temperature = raw / 100
+   */
+
+  const temperatureRaw =
+    value.getInt16(0, true);
+
+
+  const temperature =
+    temperatureRaw / 100;
+
+
+  /*
+   * byte 2:
+   * relative humidity %
+   */
+
+  const humidity =
+    value.getUint8(2);
+
+
+  /*
+   * bytes 3-4:
+   * unsigned little-endian
+   *
+   * battery voltage in mV
+   */
+
+  const voltageMv =
+    value.getUint16(3, true);
+
+
+  const voltage =
+    voltageMv / 1000;
+
+
+  /*
+   * 顯示
+   */
+
+  $("temperature").textContent =
+    temperature.toFixed(2);
+
+
+  $("humidity").textContent =
+    humidity;
+
+
+  $("voltage").textContent =
+    voltage.toFixed(3);
+
+
+  $("lastUpdate").textContent =
+    new Date().toLocaleTimeString();
+
+
+  /*
+   * 顯示完整封包
+   */
+
   $("notification").textContent =
-    `Length: ${bytes.length} bytes\n` +
-    `HEX: ${hex}\n` +
-    `DEC: ${bytes.join(", ")}`;
+    "HEX: " + hex + "\n" +
+    "Length: " + value.byteLength + " bytes\n\n" +
+
+    "Temperature raw: " +
+    temperatureRaw + "\n" +
+
+    "Temperature: " +
+    temperature.toFixed(2) +
+    " °C\n\n" +
+
+    "Humidity: " +
+    humidity +
+    " %\n\n" +
+
+    "Battery voltage: " +
+    voltageMv +
+    " mV\n" +
+
+    "Battery voltage: " +
+    voltage.toFixed(3) +
+    " V";
 
 
   log(
-    `EBE0CCBC notification: ${hex}`
+    `CCC1 = ${hex}`
   );
 
 
-  /*
-   * 常見 Xiaomi EBE0 系列格式：
-   *
-   * byte 0-1 = temperature
-   * byte 2-3 = humidity
-   *
-   * 但不同型號/韌體可能不同。
-   *
-   * 因此這裡只在長度足夠時進行候選解析，
-   * 同時保留原始 HEX。
-   */
+  log(
+    `Temperature = ${temperature.toFixed(2)} °C`
+  );
 
 
-  if(bytes.length >= 4){
-
-    /*
-     * little-endian signed 16-bit
-     */
-    const rawTemp =
-      value.getInt16(0, true);
-
-    /*
-     * little-endian unsigned 16-bit
-     */
-    const rawHumidity =
-      value.getUint16(2, true);
+  log(
+    `Humidity = ${humidity} %`
+  );
 
 
-    /*
-     * 常見格式候選：
-     *
-     * temperature = raw / 100
-     * humidity    = raw / 100
-     */
+  log(
+    `Battery voltage = ${voltageMv} mV`
+  );
 
-    const temperature =
-      rawTemp / 100;
-
-    const humidity =
-      rawHumidity / 100;
+}
 
 
-    /*
-     * 只有在合理範圍才顯示，
-     * 避免把未知封包誤當成溫濕度。
-     */
+/* ==================================================
+   Battery percentage
+================================================== */
 
-    if(
-      temperature >= -40 &&
-      temperature <= 85
-    ){
+async function readBatteryPercentage(){
 
-      $("temperature").textContent =
-        temperature.toFixed(2);
+  try{
 
-    }
+    const value =
+      await batteryCharacteristic.readValue();
 
 
-    if(
-      humidity >= 0 &&
-      humidity <= 100
-    ){
-
-      $("humidity").textContent =
-        humidity.toFixed(2);
-
-    }
-
-
-    log(
-      `Candidate temperature=${temperature.toFixed(2)} °C`
-    );
-
-    log(
-      `Candidate humidity=${humidity.toFixed(2)} %`
-    );
-
-  }
-
-
-  /*
-   * 如果第五個 byte 看起來像百分比，
-   * 暫時作為 battery candidate。
-   *
-   * 這只是候選值，不宣稱它一定是電池。
-   */
-
-  if(bytes.length >= 5){
-
-    const candidateBattery =
-      bytes[4];
-
-    if(
-      candidateBattery >= 0 &&
-      candidateBattery <= 100
-    ){
-
-      $("battery").textContent =
-        candidateBattery;
+    if(value.byteLength < 1){
 
       log(
-        `Candidate battery=${candidateBattery}%`
+        "CCC4 沒有資料"
       );
 
+      return;
+
     }
+
+
+    const percent =
+      value.getUint8(0);
+
+
+    $("battery").textContent =
+      percent;
+
+
+    $("batteryRaw").textContent =
+      "HEX: " +
+      dataViewToHex(value) +
+      "\n\n" +
+
+      "Battery percentage: " +
+      percent +
+      "%";
+
+
+    log(
+      `CCC4 battery = ${percent}%`
+    );
+
+
+  }catch(error){
+
+    log(
+      "CCC4 read error: " +
+      error.message
+    );
 
   }
 
 }
 
 
-/* --------------------------------------------------
-   Read all readable characteristics
--------------------------------------------------- */
-
-async function inspectCharacteristics(service){
-
-  const chars =
-    await service.getCharacteristics();
-
-
-  for(const characteristic of chars){
-
-    const properties =
-      characteristic.properties;
-
-
-    if(!properties.read){
-
-      continue;
-
-    }
-
-
-    try{
-
-      const value =
-        await characteristic.readValue();
-
-
-      const hex =
-        dataViewToHex(value);
-
-
-      log(
-        `READ ${characteristic.uuid} = ${hex}`
-      );
-
-
-      /*
-       * 某些 Xiaomi characteristic
-       * 可能直接包含電池百分比。
-       *
-       * 先嘗試單 byte battery candidate。
-       */
-
-      if(value.byteLength === 1){
-
-        const n =
-          value.getUint8(0);
-
-
-        if(n >= 0 && n <= 100){
-
-          /*
-           * 這裡不立即覆蓋 notification
-           * 得到的值，只在目前沒有 battery 時使用。
-           */
-
-          if(
-            $("battery").textContent === "--"
-          ){
-
-            $("battery").textContent =
-              n;
-
-          }
-
-        }
-
-      }
-
-    }catch(error){
-
-      log(
-        `READ ERROR ${characteristic.uuid}: ` +
-        error.message
-      );
-
-    }
-
-  }
-
-}
-
-
-/* --------------------------------------------------
-   GATT exploration
--------------------------------------------------- */
+/* ==================================================
+   探索 GATT
+================================================== */
 
 async function exploreGATT(server){
 
@@ -571,27 +619,13 @@ async function exploreGATT(server){
 
 
       output +=
-        `    ${c.uuid} [${p.join(", ")}]\n`;
+        `    ${c.uuid} ` +
+        `[${p.join(", ")}]\n`;
 
     }
 
 
     output += "\n";
-
-
-    /*
-     * 對自訂 Xiaomi service 做 readable
-     * characteristic inspection。
-     */
-
-    if(
-      service.uuid.toLowerCase() ===
-      SERVICE_UUID
-    ){
-
-      await inspectCharacteristics(service);
-
-    }
 
   }
 
@@ -602,22 +636,25 @@ async function exploreGATT(server){
 }
 
 
-/* --------------------------------------------------
+/* ==================================================
    Connect
--------------------------------------------------- */
+================================================== */
 
 async function connect(){
 
   log("開始");
 
 
-  if(!window.isSecureContext){
+  log(
+    "Web Bluetooth = " +
+    ("bluetooth" in navigator)
+  );
 
-    log(
-      "WARNING: 非 secure context"
-    );
 
-  }
+  log(
+    "Secure Context = " +
+    window.isSecureContext
+  );
 
 
   if(
@@ -641,13 +678,6 @@ async function connect(){
     );
 
 
-    /*
-     * 這裡非常重要：
-     *
-     * 把你實際發現的 Xiaomi service
-     * 放進 optionalServices。
-     */
-
     device =
       await navigator.bluetooth.requestDevice({
 
@@ -666,21 +696,30 @@ async function connect(){
       });
 
 
-    $("status").innerHTML =
-      '<span class="ok">✓ 已選擇裝置</span>';
-
-
     $("device").textContent =
-      `name: ${device.name || "(無名稱)"}\n` +
-      `id: ${device.id}`;
+      "name: " +
+      (device.name || "(無名稱)") +
+      "\n" +
+
+      "id: " +
+      device.id;
+
+
+    $("status").innerHTML =
+      '<span class="ok">' +
+      '✓ 已選擇裝置' +
+      '</span>';
 
 
     log(
-      `選到: ${device.name || "(無名稱)"}`
+      "選到: " +
+      (device.name || "(無名稱)")
     );
 
+
     log(
-      `id: ${device.id}`
+      "id: " +
+      device.id
     );
 
 
@@ -709,8 +748,14 @@ async function connect(){
 
 
     $("status").innerHTML =
-      '<span class="ok">✓ GATT 已連線</span>';
+      '<span class="ok">' +
+      '✓ GATT 已連線' +
+      '</span>';
 
+
+    /*
+     * GATT 探索
+     */
 
     await exploreGATT(server);
 
@@ -730,8 +775,14 @@ async function connect(){
       );
 
 
+    /*
+     * ============================================
+     * CCC1
+     * ============================================
+     */
+
     log(
-      "取得 EBE0CCBC characteristic..."
+      "取得 EBE0CCC1..."
     );
 
 
@@ -742,30 +793,61 @@ async function connect(){
 
 
     /*
-     * 先註冊 event handler
+     * 註冊 notification
      */
 
     dataCharacteristic.addEventListener(
       "characteristicvaluechanged",
-      parseNotification
+      parseSensorData
     );
 
 
     /*
-     * 開啟 notification
+     * 啟用 notification
      */
 
     await dataCharacteristic.startNotifications();
 
 
     log(
-      "✓ EBE0CCBC notification 已啟用"
+      "✓ CCC1 notification 已啟用"
     );
+
+
+    /*
+     * ============================================
+     * CCC4
+     * ============================================
+     */
+
+    try{
+
+      batteryCharacteristic =
+        await service.getCharacteristic(
+          BATTERY_UUID
+        );
+
+
+      log(
+        "取得 EBE0CCC4"
+      );
+
+
+      await readBatteryPercentage();
+
+    }catch(error){
+
+      log(
+        "CCC4 無法讀取: " +
+        error.message
+      );
+
+    }
 
 
     $("status").innerHTML =
       '<span class="ok">' +
-      '✓ 已連線，等待感測器資料...' +
+      '✓ 已連線，等待 CCC1 資料...' +
       '</span>';
 
 
@@ -793,9 +875,9 @@ async function connect(){
 }
 
 
-/* --------------------------------------------------
-   Disconnect
--------------------------------------------------- */
+/* ==================================================
+   Disconnected
+================================================== */
 
 function disconnected(){
 
@@ -804,8 +886,10 @@ function disconnected(){
   );
 
 
-  $("status").textContent =
-    "已斷線";
+  $("status").innerHTML =
+    '<span class="warn">' +
+    '已斷線' +
+    '</span>';
 
 
   $("connect").disabled = false;
@@ -813,14 +897,15 @@ function disconnected(){
 
 
   dataCharacteristic = null;
+  batteryCharacteristic = null;
   server = null;
 
 }
 
 
-/* --------------------------------------------------
-   Manual disconnect
--------------------------------------------------- */
+/* ==================================================
+   Disconnect
+================================================== */
 
 async function disconnect(){
 
@@ -832,15 +917,28 @@ async function disconnect(){
 
         await dataCharacteristic.stopNotifications();
 
-      }catch(e){}
+      }catch(error){
+
+        log(
+          "停止 CCC1 notification 失敗: " +
+          error.message
+        );
+
+      }
 
     }
 
 
     if(
       device &&
+      device.gatt &&
       device.gatt.connected
     ){
+
+      log(
+        "Disconnect..."
+      );
+
 
       device.gatt.disconnect();
 
@@ -849,7 +947,8 @@ async function disconnect(){
   }catch(error){
 
     log(
-      `Disconnect ERROR: ${error.message}`
+      "Disconnect ERROR: " +
+      error.message
     );
 
   }
@@ -857,9 +956,9 @@ async function disconnect(){
 }
 
 
-/* --------------------------------------------------
+/* ==================================================
    Buttons
--------------------------------------------------- */
+================================================== */
 
 $("connect").addEventListener(
   "click",
@@ -873,9 +972,9 @@ $("disconnect").addEventListener(
 );
 
 
-/* --------------------------------------------------
+/* ==================================================
    Startup
--------------------------------------------------- */
+================================================== */
 
 log("Ready");
 
@@ -886,7 +985,7 @@ log(
 
 log(
   "Secure Context = " +
-  location.isSecureContext
+  window.isSecureContext
 );
 
 </script>
