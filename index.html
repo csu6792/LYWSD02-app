@@ -1678,7 +1678,7 @@ function parseHistory(value){
 
 
   const maxTemperature =
-    value.getInt16(8,true) / 100;
+    value.getInt16(8,true) / 10;
 
 
   const maxHumidity =
@@ -1686,7 +1686,7 @@ function parseHistory(value){
 
 
   const minTemperature =
-    value.getInt16(11,true) / 100;
+    value.getInt16(11,true) / 10;
 
 
   const minHumidity =
