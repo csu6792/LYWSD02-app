@@ -1,1740 +1,959 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>LYWSD02MMC BLE Monitor</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LYWSD02 BLE 工具</title>
 
 <style>
-body{
-  font-family:system-ui,sans-serif;
-  background:#f3f4f6;
-  margin:0;
-  padding:20px;
-  color:#111827
+:root{
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --border:#d1d5db;
+  --primary:#2563eb;
+  --danger:#dc2626;
+  --success:#059669;
+  --warning:#d97706;
 }
 
-main{
-  max-width:900px;
-  margin:auto
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  padding:20px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans TC",
+    "Microsoft JhengHei",
+    sans-serif;
+}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+}
+
+h1{
+  margin-top:0;
+}
+
+h2{
+  margin-top:0;
+  font-size:20px;
 }
 
 .card{
-  background:#fff;
-  padding:20px;
-  border-radius:16px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px;
   margin-bottom:16px;
-  box-shadow:0 3px 15px #0001
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
 }
 
 button{
-  background:#111827;
-  color:#fff;
   border:0;
-  border-radius:10px;
-  padding:12px 18px;
-  font-size:16px;
+  border-radius:9px;
+  padding:10px 15px;
   cursor:pointer;
-  margin-right:8px;
-  margin-bottom:8px
+  background:var(--primary);
+  color:white;
+  font-size:14px;
+}
+
+button:hover{
+  opacity:.9;
 }
 
 button:disabled{
-  opacity:.5;
-  cursor:not-allowed
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+button.danger{
+  background:var(--danger);
+}
+
+button.success{
+  background:var(--success);
+}
+
+button.warning{
+  background:var(--warning);
+}
+
+input{
+  padding:9px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:14px;
+}
+
+.status{
+  margin-top:12px;
+  padding:10px;
+  border-radius:8px;
+  background:#f9fafb;
+  border:1px solid var(--border);
+}
+
+.status.connected{
+  border-color:#86efac;
+  background:#f0fdf4;
+}
+
+.status.disconnected{
+  border-color:#fecaca;
+  background:#fef2f2;
 }
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-  gap:12px
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:12px;
 }
 
 .metric{
-  background:#f9fafb;
-  border-radius:12px;
-  padding:16px
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fafafa;
 }
 
-.label{
-  color:#6b7280;
-  font-size:14px
+.metric .label{
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:5px;
 }
 
-.value{
-  font-size:38px;
+.metric .value{
+  font-size:22px;
   font-weight:700;
-  margin:8px 0
-}
-
-.unit{
-  color:#6b7280
 }
 
 .small{
-  font-size:14px;
-  color:#6b7280;
-  margin-top:8px
+  color:var(--muted);
+  font-size:13px;
 }
 
 pre{
-  background:#111827;
-  color:#d1d5db;
-  padding:14px;
-  border-radius:10px;
-  overflow:auto;
   white-space:pre-wrap;
-  word-break:break-all
+  word-break:break-word;
+  background:#111827;
+  color:#e5e7eb;
+  border-radius:10px;
+  padding:12px;
+  max-height:350px;
+  overflow:auto;
+  font-size:12px;
 }
 
-.muted{
-  color:#6b7280
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:10px;
+  max-height:600px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+th,
+td{
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+  text-align:center;
+  white-space:nowrap;
+}
+
+th{
+  background:#f9fafb;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+
+tr:last-child td{
+  border-bottom:0;
+}
+
+.progress{
+  height:10px;
+  border-radius:999px;
+  background:#e5e7eb;
+  overflow:hidden;
+  margin-top:10px;
+}
+
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:var(--primary);
+  transition:width .2s;
+}
+
+.log{
+  max-height:300px;
+  overflow:auto;
+  background:#111827;
+  color:#d1d5db;
+  padding:12px;
+  border-radius:10px;
+  font-family:monospace;
+  font-size:12px;
+}
+
+.log-line{
+  margin-bottom:3px;
 }
 
 .ok{
-  color:#15803d
-}
-
-.err{
-  color:#b91c1c
+  color:#6ee7b7;
 }
 
 .warn{
-  color:#b45309
+  color:#fcd34d;
 }
 
-.timebox{
-  font-size:32px;
-  font-weight:700;
-  margin:10px 0
+.err{
+  color:#fca5a5;
 }
 
-.history-number{
-  font-size:38px;
-  font-weight:700;
-  margin:8px 0
+code{
+  background:#f3f4f6;
+  padding:2px 5px;
+  border-radius:4px;
+}
+
+@media(max-width:600px){
+
+  body{
+    padding:10px;
+  }
+
+  button{
+    width:100%;
+  }
+
+  .row button{
+    flex:1 1 100%;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<main>
+<div class="container">
 
-<!-- ==================================================
-     CONNECTION
-================================================== -->
+<h1>🌡️ Xiaomi LYWSD02 BLE 工具</h1>
+
+<!-- =========================
+     Bluetooth 連線
+========================= -->
 
 <div class="card">
 
-<h1>🌡️ LYWSD02MMC BLE Monitor</h1>
+<h2>🔌 Bluetooth 連線</h2>
 
-<p class="muted">
-Xiaomi / Mijia LYWSD02MMC
-</p>
+<div class="row">
 
-<button id="connect">
-🔵 Connect Bluetooth
+<button id="connectBtn">
+連線裝置
 </button>
 
-<button id="disconnect" disabled>
-Disconnect
+<button id="disconnectBtn"
+        class="danger"
+        disabled>
+斷線
 </button>
 
-<p id="status">尚未連線</p>
+</div>
+
+<div id="connectionStatus"
+     class="status disconnected">
+尚未連線
+</div>
+
+<div class="small"
+     style="margin-top:10px">
+
+請使用支援 Web Bluetooth 的 Chromium 系瀏覽器，
+並透過 HTTPS 或 localhost 開啟。
+
+</div>
 
 </div>
 
 
-<!-- ==================================================
-     SENSOR
-================================================== -->
+<!-- =========================
+     即時資料
+========================= -->
 
 <div class="card">
 
-<h2>📊 即時數值</h2>
+<h2>🌡️ 即時資料</h2>
 
 <div class="grid">
 
 <div class="metric">
-<div class="label">🌡️ Temperature</div>
-<div class="value">
-<span id="temperature">--</span>
+
+<div class="label">
+溫度
 </div>
-<div class="unit">°C</div>
+
+<div class="value"
+     id="temperature">
+-- °C
+</div>
+
 </div>
 
 
 <div class="metric">
-<div class="label">💧 Humidity</div>
-<div class="value">
-<span id="humidity">--</span>
+
+<div class="label">
+濕度
 </div>
-<div class="unit">%</div>
+
+<div class="value"
+     id="humidity">
+-- %
+</div>
+
 </div>
 
 
 <div class="metric">
-<div class="label">🔋 Battery Voltage</div>
-<div class="value">
-<span id="voltage">--</span>
+
+<div class="label">
+電壓
 </div>
-<div class="unit">V</div>
+
+<div class="value"
+     id="voltage">
+-- V
+</div>
+
 </div>
 
 
 <div class="metric">
-<div class="label">🔋 Battery %</div>
-<div class="value">
-<span id="battery">--</span>
-</div>
-<div class="unit">裝置回報</div>
+
+<div class="label">
+電量
 </div>
 
-</div>
-
-<div class="small">
-最後更新：
-<span id="lastUpdate">--</span>
+<div class="value"
+     id="battery">
+-- %
 </div>
 
 </div>
 
+</div>
 
-<!-- ==================================================
-     TIME
-================================================== -->
+<div class="row"
+     style="margin-top:12px">
+
+<button id="refreshLiveBtn"
+        disabled>
+🔄 更新即時資料
+</button>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     裝置時間
+========================= -->
 
 <div class="card">
 
-<h2>🕒 時間同步</h2>
+<h2>⏰ 裝置時間</h2>
+
+<div class="grid">
+
+<div class="metric">
 
 <div class="label">
-瀏覽器目前時間
+裝置時間
 </div>
 
-<div class="timebox" id="localTime">
+<div class="value"
+     id="deviceTime"
+     style="font-size:18px">
 --
 </div>
 
-<button id="syncTime" disabled>
-🔄 同步裝置時間
+</div>
+
+
+<div class="metric">
+
+<div class="label">
+時區
+</div>
+
+<div class="value"
+     id="deviceTimezone">
+--
+</div>
+
+</div>
+
+</div>
+
+<div class="row"
+     style="margin-top:12px">
+
+<button id="readTimeBtn"
+        disabled>
+讀取裝置時間
 </button>
 
-<p id="timeStatus" class="muted">
-尚未同步
-</p>
+<button id="syncTimeBtn"
+        class="success"
+        disabled>
+🕒 同步目前時間
+</button>
 
-<pre id="timeVerify">尚未驗證</pre>
+</div>
+
+<div class="small"
+     style="margin-top:10px">
+
+時間同步只寫入 EBE0CCB7。
+
+</div>
 
 </div>
 
 
-<!-- ==================================================
-     HISTORY CAPACITY
-================================================== -->
+<!-- =========================
+     歷史狀態
+========================= -->
 
 <div class="card">
 
-<h2>📜 歷史資料</h2>
-
-<p class="muted">
-讀取 LYWSD02MMC 內部歷史資料容量。
-此功能只讀取 CCB9，不會修改裝置資料。
-</p>
-
-<button id="queryHistory" disabled>
-🔍 查詢歷史容量
-</button>
+<h2>📚 歷史資料狀態</h2>
 
 <div class="grid">
 
 <div class="metric">
-<div class="label">📦 總歷史筆數</div>
 
-<div class="history-number">
-<span id="historyTotal">--</span>
+<div class="label">
+累計紀錄數
 </div>
 
-<div class="unit">
-records
+<div class="value"
+     id="totalRecords">
+--
 </div>
+
 </div>
 
 
 <div class="metric">
-<div class="label">💾 目前儲存筆數</div>
 
-<div class="history-number">
-<span id="historyStored">--</span>
+<div class="label">
+目前保存紀錄
 </div>
 
-<div class="unit">
-records
+<div class="value"
+     id="storedRecords">
+--
 </div>
-</div>
-
-</div>
-
-<p id="historyStatus" class="muted">
-尚未查詢
-</p>
-
-<pre id="historyRaw">尚未讀取 CCB9</pre>
 
 </div>
 
 
-<!-- ==================================================
-     DEVICE
-================================================== -->
+<div class="metric">
+
+<div class="label">
+最舊 Index
+</div>
+
+<div class="value"
+     id="oldestIndex">
+--
+</div>
+
+</div>
+
+
+<div class="metric">
+
+<div class="label">
+最新 Index
+</div>
+
+<div class="value"
+     id="newestIndex">
+--
+</div>
+
+</div>
+
+</div>
+
+
+<div class="row"
+     style="margin-top:12px">
+
+<button id="historyStatusBtn"
+        disabled>
+🔍 查詢歷史狀態
+</button>
+
+</div>
+
+
+<div class="small"
+     style="margin-top:10px">
+
+CCB9：
+前 4 bytes = Total Records，
+後 4 bytes = Stored Records。
+
+例如：
+
+11506 - 3827 + 1 = 7680
+
+所以目前保存的 Index 範圍為：
+
+7680 ～ 11506
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     歷史資料
+========================= -->
 
 <div class="card">
 
-<h2>📱 Device</h2>
+<h2>📊 歷史資料</h2>
 
-<pre id="device">--</pre>
+<div class="row">
+
+<label>
+筆數：
+
+<input
+  id="historyCount"
+  type="number"
+  min="1"
+  max="96"
+  value="96"
+  style="width:90px">
+</label>
+
+
+<button id="readHistoryBtn"
+        class="success"
+        disabled>
+📊 讀取最近 96 筆歷史
+</button>
+
+
+<button id="stopHistoryBtn"
+        class="danger"
+        disabled>
+停止讀取
+</button>
+
+
+<button id="downloadCsvBtn"
+        disabled>
+💾 下載 CSV
+</button>
 
 </div>
 
 
-<!-- ==================================================
-     CCC1
-================================================== -->
+<div style="margin-top:14px">
+
+<div id="historyProgressText">
+尚未讀取
+</div>
+
+<div class="progress">
+
+<div id="historyProgress"
+     class="progress-bar">
+</div>
+
+</div>
+
+</div>
+
+
+<div class="small"
+     style="margin-top:12px">
+
+歷史資料：
+
+Index /
+Timestamp /
+Max Temperature /
+Max Humidity /
+Min Temperature /
+Min Humidity
+
+</div>
+
+
+<div class="table-wrap"
+     style="margin-top:14px">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>#</th>
+<th>Index</th>
+<th>時間</th>
+<th>最低溫</th>
+<th>最低濕度</th>
+<th>最高溫</th>
+<th>最高濕度</th>
+
+</tr>
+
+</thead>
+
+<tbody id="historyTableBody">
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     GATT Explorer
+========================= -->
 
 <div class="card">
 
-<h2>📡 CCC1 即時資料</h2>
+<h2>🔬 GATT Explorer</h2>
 
-<p class="muted">
-EBE0CCC1-7A0A-4B0C-8A1A-6FF2997DA3A6
-</p>
+<div class="row">
 
-<pre id="notification">尚未收到資料</pre>
+<button id="exploreBtn"
+        disabled>
+掃描已連線 GATT
+</button>
+
+</div>
+
+<pre id="gattOutput">
+尚未掃描
+</pre>
 
 </div>
 
 
-<!-- ==================================================
-     BATTERY
-================================================== -->
-
-<div class="card">
-
-<h2>🔋 CCC4 Battery</h2>
-
-<pre id="batteryRaw">尚未讀取</pre>
-
-</div>
-
-
-<!-- ==================================================
-     TIME CHARACTERISTICS
-================================================== -->
-
-<div class="card">
-
-<h2>🕒 時間 Characteristic</h2>
-
-<pre id="timeChars">尚未偵測</pre>
-
-</div>
-
-
-<!-- ==================================================
-     GATT
-================================================== -->
-
-<div class="card">
-
-<h2>🔧 GATT Services / Characteristics</h2>
-
-<pre id="gatt">尚未連線</pre>
-
-</div>
-
-
-<!-- ==================================================
-     LOG
-================================================== -->
+<!-- =========================
+     Log
+========================= -->
 
 <div class="card">
 
 <h2>📝 Log</h2>
 
-<pre id="log"></pre>
+<div class="log"
+     id="log">
+</div>
 
 </div>
 
-</main>
+</div>
 
 
 <script>
 
-/* ==================================================
-   UUID
-================================================== */
+/* =====================================================
+   LYWSD02MMC GATT
+===================================================== */
 
-const SERVICE_UUID =
+const SERVICE =
   "ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6";
 
+const UUID = {
 
-/*
- * 即時溫度 / 濕度 / 電壓
- */
-const DATA_UUID =
-  "ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6";
+  TIME:
+    "ebe0ccb7-7a0a-4b0c-8a1a-6ff2997da3a6",
 
+  HISTORY_COUNT:
+    "ebe0ccb9-7a0a-4b0c-8a1a-6ff2997da3a6",
 
-/*
- * Battery percentage
- */
-const BATTERY_UUID =
-  "ebe0ccc4-7a0a-4b0c-8a1a-6ff2997da3a6";
+  HISTORY_INDEX:
+    "ebe0ccba-7a0a-4b0c-8a1a-6ff2997da3a6",
 
+  HISTORY_LAST:
+    "ebe0ccbb-7a0a-4b0c-8a1a-6ff2997da3a6",
 
-/*
- * Time
- */
-const TIME_UUID =
-  "ebe0ccb7-7a0a-4b0c-8a1a-6ff2997da3a6";
+  HISTORY_NOTIFY:
+    "ebe0ccbc-7a0a-4b0c-8a1a-6ff2997da3a6",
 
+  DATA:
+    "ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6",
 
-/*
- * History record count
- *
- * CCB9 = history record information
- */
-const HISTORY_COUNT_UUID =
-  "ebe0ccb9-7a0a-4b0c-8a1a-6ff2997da3a6";
+  BATTERY:
+    "ebe0ccc4-7a0a-4b0c-8a1a-6ff2997da3a6"
+};
 
 
-/*
- * History index
- *
- * CCBA = history starting index
- */
-const HISTORY_INDEX_UUID =
-  "ebe0ccba-7a0a-4b0c-8a1a-6ff2997da3a6";
-
-
-/*
- * History data read
- */
-const HISTORY_DATA_UUID =
-  "ebe0ccbb-7a0a-4b0c-8a1a-6ff2997da3a6";
-
-
-/*
- * History notification
- */
-const HISTORY_NOTIFY_UUID =
-  "ebe0ccbc-7a0a-4b0c-8a1a-6ff2997da3a6";
-
-
-/*
- * Extra characteristics
- */
-const CCA4_UUID =
-  "ebe0cca4-7a0a-4b0c-8a1a-6ff2997da3a6";
-
-const CCD7_UUID =
-  "ebe0ccd7-7a0a-4b0c-8a1a-6ff2997da3a6";
-
-
-/* ==================================================
-   STATE
-================================================== */
+/* =====================================================
+   全域變數
+===================================================== */
 
 let device = null;
 let server = null;
 let service = null;
 
-let dataCharacteristic = null;
-let batteryCharacteristic = null;
+let chars = {};
 
-let timeCharacteristic = null;
+let liveNotifyHandler = null;
+let historyNotifyHandler = null;
 
-let cca4Characteristic = null;
-let ccd7Characteristic = null;
+let historyRunning = false;
 
-let historyCountCharacteristic = null;
-let historyIndexCharacteristic = null;
-let historyDataCharacteristic = null;
-let historyNotifyCharacteristic = null;
+let historyRecords = [];
 
-
-/* ==================================================
-   DOM helper
-================================================== */
-
-const $ = id =>
-  document.getElementById(id);
+let historyTotal = 0;
+let historyStored = 0;
+let historyOldest = 0;
+let historyNewest = 0;
 
 
-/* ==================================================
-   LOG
-================================================== */
+/* =====================================================
+   DOM
+===================================================== */
 
-function log(message){
+const $ = id => document.getElementById(id);
 
-  const time =
+const connectBtn =
+  $("connectBtn");
+
+const disconnectBtn =
+  $("disconnectBtn");
+
+const connectionStatus =
+  $("connectionStatus");
+
+const refreshLiveBtn =
+  $("refreshLiveBtn");
+
+const readTimeBtn =
+  $("readTimeBtn");
+
+const syncTimeBtn =
+  $("syncTimeBtn");
+
+const historyStatusBtn =
+  $("historyStatusBtn");
+
+const readHistoryBtn =
+  $("readHistoryBtn");
+
+const stopHistoryBtn =
+  $("stopHistoryBtn");
+
+const downloadCsvBtn =
+  $("downloadCsvBtn");
+
+const exploreBtn =
+  $("exploreBtn");
+
+const historyCountInput =
+  $("historyCount");
+
+
+/* =====================================================
+   基本工具
+===================================================== */
+
+function log(message, type=""){
+
+  const div =
+    document.createElement("div");
+
+  div.className =
+    "log-line " + type;
+
+  const now =
     new Date().toLocaleTimeString();
 
-  $("log").textContent +=
-    `[${time}] ${message}\n`;
+  div.textContent =
+    `[${now}] ${message}`;
+
+  $("log").appendChild(div);
 
   $("log").scrollTop =
     $("log").scrollHeight;
 }
 
 
-/* ==================================================
-   HEX
-================================================== */
+function bytesToHex(bytes){
 
-function dataViewToHex(view){
+  return Array.from(bytes)
+    .map(
+      b => b.toString(16).padStart(2,"0")
+    )
+    .join(" ");
+}
 
-  const bytes = [];
 
-  for(let i = 0; i < view.byteLength; i++){
+function uint32LE(bytes, offset=0){
 
-    bytes.push(
-      view.getUint8(i)
-        .toString(16)
-        .padStart(2,"0")
-    );
+  return (
+    bytes[offset] |
+    (bytes[offset+1] << 8) |
+    (bytes[offset+2] << 16) |
+    (bytes[offset+3] * 0x1000000)
+  ) >>> 0;
+}
 
+
+function int16LE(bytes, offset=0){
+
+  let value =
+    bytes[offset] |
+    (bytes[offset+1] << 8);
+
+  if(value & 0x8000){
+    value -= 0x10000;
   }
 
-  return bytes.join(" ");
+  return value;
 }
 
 
-/* ==================================================
-   CCC1 SENSOR DATA
-================================================== */
+function uint32BytesLE(value){
 
-function parseSensorData(event){
+  value =
+    Number(value) >>> 0;
 
-  const value =
-    event.target.value;
+  return new Uint8Array([
 
+    value & 0xff,
 
-  if(value.byteLength < 5){
+    (value >>> 8) & 0xff,
 
-    log(
-      "CCC1 packet 太短: " +
-      dataViewToHex(value)
-    );
+    (value >>> 16) & 0xff,
 
-    return;
-  }
+    (value >>> 24) & 0xff
+
+  ]);
+}
 
 
-  const hex =
-    dataViewToHex(value);
+function sleep(ms){
 
-
-  /*
-   * Temperature:
-   * signed int16 / 100
-   */
-
-  const temperatureRaw =
-    value.getInt16(0,true);
-
-  const temperature =
-    temperatureRaw / 100;
-
-
-  /*
-   * Humidity:
-   * byte 2
-   */
-
-  const humidity =
-    value.getUint8(2);
-
-
-  /*
-   * Battery voltage:
-   * uint16 / 1000
-   */
-
-  const voltageMv =
-    value.getUint16(3,true);
-
-  const voltage =
-    voltageMv / 1000;
-
-
-  $("temperature").textContent =
-    temperature.toFixed(2);
-
-
-  $("humidity").textContent =
-    humidity;
-
-
-  $("voltage").textContent =
-    voltage.toFixed(3);
-
-
-  $("lastUpdate").textContent =
-    new Date().toLocaleTimeString();
-
-
-  $("notification").textContent =
-    "HEX: " + hex + "\n" +
-    "Length: " + value.byteLength + " bytes\n\n" +
-
-    "Temperature raw: " +
-    temperatureRaw + "\n" +
-
-    "Temperature: " +
-    temperature.toFixed(2) +
-    " °C\n\n" +
-
-    "Humidity: " +
-    humidity +
-    " %\n\n" +
-
-    "Battery voltage: " +
-    voltageMv +
-    " mV\n" +
-
-    "Battery voltage: " +
-    voltage.toFixed(3) +
-    " V";
-
-
-  log(
-    `CCC1 = ${hex}`
-  );
-
-  log(
-    `Temperature = ${temperature.toFixed(2)} °C`
-  );
-
-  log(
-    `Humidity = ${humidity} %`
-  );
-
-  log(
-    `Battery voltage = ${voltageMv} mV`
+  return new Promise(
+    resolve => setTimeout(resolve, ms)
   );
 }
 
 
-/* ==================================================
-   BATTERY
-================================================== */
+/* =====================================================
+   連線狀態
+===================================================== */
 
-async function readBatteryPercentage(){
+function setConnectedUI(connected){
 
-  if(!batteryCharacteristic)
-    return;
+  connectionStatus.className =
+    "status " +
+    (connected ? "connected" : "disconnected");
 
+  connectionStatus.textContent =
+    connected
+      ? `已連線：${device?.name || "LYWSD02"}`
+      : "尚未連線";
 
-  try{
+  connectBtn.disabled =
+    connected;
 
-    const value =
-      await batteryCharacteristic.readValue();
+  disconnectBtn.disabled =
+    !connected;
 
+  refreshLiveBtn.disabled =
+    !connected;
 
-    if(value.byteLength < 1)
-      return;
+  readTimeBtn.disabled =
+    !connected;
 
+  syncTimeBtn.disabled =
+    !connected;
 
-    const percent =
-      value.getUint8(0);
+  historyStatusBtn.disabled =
+    !connected;
 
+  readHistoryBtn.disabled =
+    !connected;
 
-    $("battery").textContent =
-      percent;
-
-
-    $("batteryRaw").textContent =
-      "HEX: " +
-      dataViewToHex(value) +
-      "\n\n" +
-
-      "Battery percentage: " +
-      percent +
-      "%";
-
-
-    log(
-      `CCC4 battery = ${percent}%`
-    );
-
-
-  }catch(error){
-
-    log(
-      "CCC4 read error: " +
-      error.message
-    );
-
-  }
+  exploreBtn.disabled =
+    !connected;
 }
 
 
-/* ==================================================
-   LOCAL TIME
-================================================== */
+/* =====================================================
+   連線
+===================================================== */
 
-function updateLocalTime(){
-
-  $("localTime").textContent =
-    new Date().toLocaleString(
-      "zh-TW",
-      {
-        year:"numeric",
-        month:"2-digit",
-        day:"2-digit",
-        hour:"2-digit",
-        minute:"2-digit",
-        second:"2-digit",
-        hour12:false
-      }
-    );
-}
-
-
-setInterval(
-  updateLocalTime,
-  1000
+connectBtn.addEventListener(
+  "click",
+  connectDevice
 );
 
-updateLocalTime();
 
-
-/* ==================================================
-   UTC OFFSET
-================================================== */
-
-function getUTCOffsetHours(){
-
-  const minutes =
-    -new Date().getTimezoneOffset();
-
-  return minutes / 60;
-}
-
-
-/* ==================================================
-   CREATE TIME PACKET
-================================================== */
-
-function createTimePacket(){
-
-  const now =
-    Math.floor(Date.now() / 1000);
-
-  const offset =
-    getUTCOffsetHours();
-
-
-  const buffer =
-    new ArrayBuffer(5);
-
-  const view =
-    new DataView(buffer);
-
-
-  /*
-   * Unix timestamp
-   * little endian
-   */
-
-  view.setUint32(
-    0,
-    now,
-    true
-  );
-
-
-  /*
-   * UTC offset
-   */
-
-  view.setInt8(
-    4,
-    offset
-  );
-
-
-  return {
-    buffer,
-    timestamp:now,
-    offset
-  };
-}
-
-
-/* ==================================================
-   DECODE TIME
-================================================== */
-
-function decodeTimePacket(value){
-
-  if(value.byteLength < 5)
-    return null;
-
-
-  const timestamp =
-    value.getUint32(0,true);
-
-
-  const offset =
-    value.getInt8(4);
-
-
-  const localMs =
-    (timestamp + offset * 3600) * 1000;
-
-
-  const date =
-    new Date(localMs);
-
-
-  return {
-    timestamp,
-    offset,
-    date
-  };
-}
-
-
-/* ==================================================
-   FORMAT DATE
-================================================== */
-
-function formatDate(date){
-
-  return date.toLocaleString(
-    "zh-TW",
-    {
-      year:"numeric",
-      month:"2-digit",
-      day:"2-digit",
-      hour:"2-digit",
-      minute:"2-digit",
-      second:"2-digit",
-      hour12:false
-    }
-  );
-}
-
-
-/* ==================================================
-   SYNC TIME
-================================================== */
-
-async function syncTime(){
-
-  if(!timeCharacteristic){
-
-    $("timeStatus").innerHTML =
-      '<span class="err">' +
-      '找不到 CCB7 時間 characteristic' +
-      '</span>';
-
-    return;
-  }
-
-
-  if(
-    !timeCharacteristic.properties.write
-  ){
-
-    $("timeStatus").innerHTML =
-      '<span class="err">' +
-      'CCB7 不支援 write' +
-      '</span>';
-
-    return;
-  }
-
-
-  const {
-    buffer,
-    timestamp,
-    offset
-  } =
-    createTimePacket();
-
-
-  const packetView =
-    new DataView(buffer);
-
-
-  const packetHex =
-    dataViewToHex(packetView);
-
-
-  $("timeStatus").innerHTML =
-    '<span class="warn">' +
-    '正在同步...' +
-    '</span>';
-
-
-  $("timeVerify").textContent =
-    "Write packet:\n" +
-    packetHex +
-    "\n\n" +
-
-    "Timestamp:\n" +
-    timestamp +
-    "\n\n" +
-
-    "UTC offset:\n" +
-    offset;
-
+async function connectDevice(){
 
   try{
 
-    log(
-      "開始同步時間"
-    );
-
-
-    log(
-      "CCB7 WRITE = " +
-      packetHex
-    );
-
-
-    if(
-      "writeValueWithResponse" in
-      timeCharacteristic
-    ){
-
-      await timeCharacteristic
-        .writeValueWithResponse(
-          buffer
-        );
-
-    }else{
-
-      await timeCharacteristic
-        .writeValue(buffer);
-
-    }
-
-
-    log(
-      "CCB7 WRITE 完成"
-    );
-
-
-    await new Promise(
-      resolve =>
-        setTimeout(resolve,500)
-    );
-
-
-    /*
-     * Read-back verification
-     */
-
-    if(
-      timeCharacteristic.properties.read
-    ){
-
-      const verify =
-        await timeCharacteristic.readValue();
-
-
-      const verifyHex =
-        dataViewToHex(verify);
-
-
-      const decoded =
-        decodeTimePacket(verify);
-
-
-      $("timeVerify").textContent =
-        "Write packet:\n" +
-        packetHex +
-        "\n\n" +
-
-        "Read-back packet:\n" +
-        verifyHex;
-
-
-      if(decoded){
-
-        $("timeVerify").textContent +=
-          "\n\n" +
-
-          "Device timestamp:\n" +
-          decoded.timestamp +
-          "\n\n" +
-
-          "Device UTC offset:\n" +
-          decoded.offset +
-          "\n\n" +
-
-          "Device local time:\n" +
-          formatDate(decoded.date);
-
-
-        log(
-          "CCB7 READ-BACK = " +
-          verifyHex
-        );
-
-
-        const difference =
-          Math.abs(
-            decoded.timestamp -
-            timestamp
-          );
-
-
-        if(difference <= 3){
-
-          $("timeStatus").innerHTML =
-            '<span class="ok">' +
-            '✓ 時間同步成功，讀回驗證通過' +
-            '</span>';
-
-
-          log(
-            "✓ 時間驗證成功，差距 " +
-            difference +
-            " 秒"
-          );
-
-        }else{
-
-          $("timeStatus").innerHTML =
-            '<span class="warn">' +
-            '⚠ 已寫入，但讀回時間差 ' +
-            difference +
-            ' 秒' +
-            '</span>';
-
-
-          log(
-            "WARNING: timestamp difference = " +
-            difference +
-            " seconds"
-          );
-
-        }
-
-
-      }else{
-
-        $("timeStatus").innerHTML =
-          '<span class="warn">' +
-          '已寫入，但讀回資料格式無法解析' +
-          '</span>';
-
-      }
-
-
-    }else{
-
-      $("timeStatus").innerHTML =
-        '<span class="ok">' +
-        '✓ 時間已寫入（裝置不提供 read 驗證）' +
-        '</span>';
-
-    }
-
-
-  }catch(error){
-
-    log(
-      "TIME SYNC ERROR: " +
-      error.name +
-      " — " +
-      error.message
-    );
-
-
-    $("timeStatus").innerHTML =
-      '<span class="err">' +
-      '同步失敗：' +
-      error.message +
-      '</span>';
-
-  }
-
-}
-
-
-/* ==================================================
-   ★ QUERY HISTORY CAPACITY
-================================================== */
-
-async function queryHistoryCapacity(){
-
-  if(!historyCountCharacteristic){
-
-    $("historyStatus").innerHTML =
-      '<span class="err">' +
-      '找不到 CCB9 history characteristic' +
-      '</span>';
-
-    return;
-  }
-
-
-  $("historyStatus").innerHTML =
-    '<span class="warn">' +
-    '正在讀取 CCB9...' +
-    '</span>';
-
-
-  $("historyRaw").textContent =
-    "讀取中...";
-
-
-  try{
-
-    log(
-      "開始查詢歷史容量"
-    );
-
-
-    /*
-     * IMPORTANT:
-     *
-     * 這裡只有 read。
-     * 不會寫入 CCBA。
-     */
-
-    const value =
-      await historyCountCharacteristic
-        .readValue();
-
-
-    const hex =
-      dataViewToHex(value);
-
-
-    $("historyRaw").textContent =
-      "CCB9 HEX:\n" +
-      hex +
-      "\n\n" +
-
-      "Length: " +
-      value.byteLength +
-      " bytes";
-
-
-    log(
-      "CCB9 READ = " +
-      hex
-    );
-
-
-    /*
-     * LYWSD02 history count format:
-     *
-     * byte 0-3 = total records
-     * byte 4-7 = currently stored records
-     *
-     * little endian
-     */
-
-    if(value.byteLength < 8){
-
-      $("historyStatus").innerHTML =
-        '<span class="warn">' +
-        'CCB9 資料少於 8 bytes，無法完整解析' +
-        '</span>';
-
-
-      $("historyRaw").textContent +=
-        "\n\n無法解析：需要至少 8 bytes";
-
+    if(!navigator.bluetooth){
+
+      alert(
+        "此瀏覽器不支援 Web Bluetooth。\n\n" +
+        "請使用 Chrome / Edge 等 Chromium 瀏覽器。"
+      );
 
       return;
-
     }
 
 
-    const totalRecords =
-      value.getUint32(0,true);
-
-
-    const storedRecords =
-      value.getUint32(4,true);
-
-
-    $("historyTotal").textContent =
-      totalRecords;
-
-
-    $("historyStored").textContent =
-      storedRecords;
-
-
-    $("historyRaw").textContent +=
-      "\n\n" +
-
-      "Total records: " +
-      totalRecords +
-
-      "\n" +
-
-      "Stored records: " +
-      storedRecords;
-
-
-    $("historyStatus").innerHTML =
-      '<span class="ok">' +
-      '✓ 歷史容量讀取成功' +
-      '</span>';
-
-
     log(
-      `History total records = ${totalRecords}`
-    );
-
-
-    log(
-      `History stored records = ${storedRecords}`
-    );
-
-
-  }catch(error){
-
-    log(
-      "HISTORY COUNT ERROR: " +
-      error.name +
-      " — " +
-      error.message
-    );
-
-
-    $("historyStatus").innerHTML =
-      '<span class="err">' +
-      '查詢失敗：' +
-      error.message +
-      '</span>';
-
-
-    $("historyRaw").textContent =
-      "ERROR:\n" +
-      error.name +
-      "\n" +
-      error.message;
-
-  }
-
-}
-
-
-/* ==================================================
-   DETECT CCA4 / CCD7 / CCB7
-================================================== */
-
-async function detectExtraCharacteristics(){
-
-  $("timeChars").textContent =
-    "偵測中...\n";
-
-
-  /*
-   * CCA4
-   */
-
-  try{
-
-    cca4Characteristic =
-      await service.getCharacteristic(
-        CCA4_UUID
-      );
-
-
-    $("timeChars").textContent +=
-      "CCA4: FOUND\n" +
-      "properties: " +
-      JSON.stringify(
-        cca4Characteristic.properties
-      ) +
-      "\n";
-
-
-    if(
-      cca4Characteristic.properties.read
-    ){
-
-      try{
-
-        const value =
-          await cca4Characteristic.readValue();
-
-
-        $("timeChars").textContent +=
-          "CCA4 READ: " +
-          dataViewToHex(value) +
-          "\n";
-
-
-        log(
-          "CCA4 READ = " +
-          dataViewToHex(value)
-        );
-
-      }catch(error){
-
-        $("timeChars").textContent +=
-          "CCA4 READ ERROR: " +
-          error.message +
-          "\n";
-
-      }
-
-    }
-
-  }catch(error){
-
-    cca4Characteristic = null;
-
-    $("timeChars").textContent +=
-      "CCA4: NOT AVAILABLE\n";
-
-  }
-
-
-  /*
-   * CCD7
-   */
-
-  try{
-
-    ccd7Characteristic =
-      await service.getCharacteristic(
-        CCD7_UUID
-      );
-
-
-    $("timeChars").textContent +=
-      "CCD7: FOUND\n" +
-      "properties: " +
-      JSON.stringify(
-        ccd7Characteristic.properties
-      ) +
-      "\n";
-
-
-    if(
-      ccd7Characteristic.properties.read
-    ){
-
-      try{
-
-        const value =
-          await ccd7Characteristic.readValue();
-
-
-        $("timeChars").textContent +=
-          "CCD7 READ: " +
-          dataViewToHex(value) +
-          "\n";
-
-
-        log(
-          "CCD7 READ = " +
-          dataViewToHex(value)
-        );
-
-      }catch(error){
-
-        $("timeChars").textContent +=
-          "CCD7 READ ERROR: " +
-          error.message +
-          "\n";
-
-      }
-
-    }
-
-  }catch(error){
-
-    ccd7Characteristic = null;
-
-    $("timeChars").textContent +=
-      "CCD7: NOT AVAILABLE\n";
-
-  }
-
-
-  /*
-   * CCB7 TIME
-   */
-
-  try{
-
-    timeCharacteristic =
-      await service.getCharacteristic(
-        TIME_UUID
-      );
-
-
-    $("timeChars").textContent +=
-      "\nCCB7: FOUND (TIME)\n" +
-      "properties: " +
-      JSON.stringify(
-        timeCharacteristic.properties
-      ) +
-      "\n";
-
-
-    if(
-      timeCharacteristic.properties.read
-    ){
-
-      try{
-
-        const value =
-          await timeCharacteristic.readValue();
-
-
-        const hex =
-          dataViewToHex(value);
-
-
-        $("timeChars").textContent +=
-          "CCB7 READ: " +
-          hex +
-          "\n";
-
-
-        log(
-          "CCB7 READ = " +
-          hex
-        );
-
-
-        const decoded =
-          decodeTimePacket(value);
-
-
-        if(decoded){
-
-          $("timeChars").textContent +=
-            "Device time: " +
-            formatDate(decoded.date) +
-            "\n" +
-
-            "UTC offset: " +
-            decoded.offset +
-            "\n";
-
-        }
-
-
-      }catch(error){
-
-        $("timeChars").textContent +=
-          "CCB7 READ ERROR: " +
-          error.message +
-          "\n";
-
-      }
-
-    }
-
-
-  }catch(error){
-
-    timeCharacteristic = null;
-
-    $("timeChars").textContent +=
-      "\nCCB7: NOT AVAILABLE\n";
-
-
-    log(
-      "CCB7 不可用: " +
-      error.message
-    );
-
-  }
-
-}
-
-
-/* ==================================================
-   HISTORY CHARACTERISTICS
-================================================== */
-
-async function detectHistoryCharacteristics(){
-
-  /*
-   * CCB9
-   */
-
-  try{
-
-    historyCountCharacteristic =
-      await service.getCharacteristic(
-        HISTORY_COUNT_UUID
-      );
-
-
-    log(
-      "✓ CCB9 history count FOUND"
-    );
-
-
-  }catch(error){
-
-    historyCountCharacteristic =
-      null;
-
-
-    log(
-      "CCB9 不可用: " +
-      error.message
-    );
-
-  }
-
-
-  /*
-   * CCBA
-   */
-
-  try{
-
-    historyIndexCharacteristic =
-      await service.getCharacteristic(
-        HISTORY_INDEX_UUID
-      );
-
-
-    log(
-      "✓ CCBA history index FOUND"
-    );
-
-
-  }catch(error){
-
-    historyIndexCharacteristic =
-      null;
-
-
-    log(
-      "CCBA 不可用: " +
-      error.message
-    );
-
-  }
-
-
-  /*
-   * CCBB
-   */
-
-  try{
-
-    historyDataCharacteristic =
-      await service.getCharacteristic(
-        HISTORY_DATA_UUID
-      );
-
-
-    log(
-      "✓ CCBB history data FOUND"
-    );
-
-
-  }catch(error){
-
-    historyDataCharacteristic =
-      null;
-
-
-    log(
-      "CCBB 不可用: " +
-      error.message
-    );
-
-  }
-
-
-  /*
-   * CCBC
-   */
-
-  try{
-
-    historyNotifyCharacteristic =
-      await service.getCharacteristic(
-        HISTORY_NOTIFY_UUID
-      );
-
-
-    log(
-      "✓ CCBC history notification FOUND"
-    );
-
-
-  }catch(error){
-
-    historyNotifyCharacteristic =
-      null;
-
-
-    log(
-      "CCBC 不可用: " +
-      error.message
-    );
-
-  }
-
-
-  /*
-   * 啟用查詢按鈕。
-   *
-   * 只需要 CCB9。
-   */
-
-  $("queryHistory").disabled =
-    !historyCountCharacteristic;
-
-
-}
-
-
-/* ==================================================
-   GATT EXPLORER
-================================================== */
-
-async function exploreGATT(server){
-
-  const services =
-    await server.getPrimaryServices();
-
-
-  log(
-    `Primary services: ${services.length}`
-  );
-
-
-  let output = "";
-
-
-  for(const s of services){
-
-    output +=
-      `SERVICE\n${s.uuid}\n`;
-
-
-    let chars = [];
-
-
-    try{
-
-      chars =
-        await s.getCharacteristics();
-
-    }catch(error){
-
-      output +=
-        ` ERROR: ${error.message}\n\n`;
-
-      continue;
-
-    }
-
-
-    output +=
-      ` Characteristics: ${chars.length}\n`;
-
-
-    for(const c of chars){
-
-      const p = [];
-
-
-      if(c.properties.broadcast)
-        p.push("broadcast");
-
-      if(c.properties.read)
-        p.push("read");
-
-      if(c.properties.writeWithoutResponse)
-        p.push("writeWithoutResponse");
-
-      if(c.properties.write)
-        p.push("write");
-
-      if(c.properties.notify)
-        p.push("notify");
-
-      if(c.properties.indicate)
-        p.push("indicate");
-
-
-      output +=
-        `   ${c.uuid} ` +
-        `[${p.join(", ")}]\n`;
-
-    }
-
-
-    output += "\n";
-
-  }
-
-
-  $("gatt").textContent =
-    output || "沒有 primary service";
-
-}
-
-
-/* ==================================================
-   CONNECT
-================================================== */
-
-async function connect(){
-
-  log("開始");
-
-
-  log(
-    "Web Bluetooth = " +
-    ("bluetooth" in navigator)
-  );
-
-
-  log(
-    "Secure Context = " +
-    window.isSecureContext
-  );
-
-
-  if(
-    !("bluetooth" in navigator)
-  ){
-
-    $("status").innerHTML =
-      '<span class="err">' +
-      '此瀏覽器沒有 Web Bluetooth' +
-      '</span>';
-
-    return;
-
-  }
-
-
-  try{
-
-    log(
-      "呼叫 requestDevice()"
+      "開啟 Bluetooth 裝置選擇器...",
+      "ok"
     );
 
 
@@ -1744,289 +963,132 @@ async function connect(){
         acceptAllDevices:true,
 
         optionalServices:[
-
-          "generic_access",
-          "generic_attribute",
-          "battery_service",
-
-          SERVICE_UUID
-
+          SERVICE
         ]
 
       });
 
 
-    $("device").textContent =
-      "name: " +
-      (device.name || "(無名稱)") +
-      "\n" +
-
-      "id: " +
-      device.id;
-
-
     log(
-      "選到: " +
-      (device.name || "(無名稱)")
-    );
-
-
-    log(
-      "id: " +
-      device.id
+      `選擇裝置：${device.name || "(無名稱)"}`,
+      "ok"
     );
 
 
     device.addEventListener(
       "gattserverdisconnected",
-      disconnected
+      handleDisconnected
     );
 
 
-    $("connect").disabled =
-      true;
-
-
-    $("disconnect").disabled =
-      false;
-
-
-    log(
-      "開始 GATT connect..."
-    );
+    log("正在連線 GATT...");
 
 
     server =
       await device.gatt.connect();
 
 
-    log(
-      "GATT connected"
-    );
-
-
     service =
       await server.getPrimaryService(
-        SERVICE_UUID
+        SERVICE
       );
-
-
-    await exploreGATT(server);
-
-
-    /*
-     * CCC1
-     */
-
-    dataCharacteristic =
-      await service.getCharacteristic(
-        DATA_UUID
-      );
-
-
-    dataCharacteristic.addEventListener(
-      "characteristicvaluechanged",
-      parseSensorData
-    );
-
-
-    await dataCharacteristic
-      .startNotifications();
 
 
     log(
-      "✓ CCC1 notification 已啟用"
+      "找到 EBE0CCB0 Service",
+      "ok"
     );
 
 
-    /*
-     * CCC4
-     */
-
-    try{
-
-      batteryCharacteristic =
-        await service.getCharacteristic(
-          BATTERY_UUID
-        );
-
-
-      await readBatteryPercentage();
-
-
-    }catch(error){
-
-      log(
-        "CCC4 不可用: " +
-        error.message
+    chars.TIME =
+      await service.getCharacteristic(
+        UUID.TIME
       );
 
-    }
+
+    chars.HISTORY_COUNT =
+      await service.getCharacteristic(
+        UUID.HISTORY_COUNT
+      );
 
 
-    /*
-     * CCB9 / CCBA / CCBB / CCBC
-     */
-
-    await detectHistoryCharacteristics();
-
-
-    /*
-     * CCA4 / CCD7 / CCB7
-     */
-
-    await detectExtraCharacteristics();
+    chars.HISTORY_INDEX =
+      await service.getCharacteristic(
+        UUID.HISTORY_INDEX
+      );
 
 
-    /*
-     * Enable buttons
-     */
-
-    $("syncTime").disabled =
-      !timeCharacteristic;
+    chars.HISTORY_LAST =
+      await service.getCharacteristic(
+        UUID.HISTORY_LAST
+      );
 
 
-    $("queryHistory").disabled =
-      !historyCountCharacteristic;
+    chars.HISTORY_NOTIFY =
+      await service.getCharacteristic(
+        UUID.HISTORY_NOTIFY
+      );
 
 
-    $("status").innerHTML =
-      '<span class="ok">' +
-      '✓ 已連線' +
-      '</span>';
+    chars.DATA =
+      await service.getCharacteristic(
+        UUID.DATA
+      );
 
 
-    if(timeCharacteristic){
-
-      $("timeStatus").innerHTML =
-        '<span class="ok">' +
-        '✓ 已找到 CCB7，可以同步時間' +
-        '</span>';
-
-    }else{
-
-      $("timeStatus").innerHTML =
-        '<span class="err">' +
-        '找不到時間 characteristic' +
-        '</span>';
-
-    }
+    chars.BATTERY =
+      await service.getCharacteristic(
+        UUID.BATTERY
+      );
 
 
-    if(historyCountCharacteristic){
+    setConnectedUI(true);
 
-      $("historyStatus").innerHTML =
-        '<span class="ok">' +
-        '✓ 已找到 CCB9，可以查詢歷史容量' +
-        '</span>';
 
-    }else{
+    log(
+      "GATT Characteristics 初始化完成",
+      "ok"
+    );
 
-      $("historyStatus").innerHTML =
-        '<span class="err">' +
-        '找不到 CCB9' +
-        '</span>';
 
-    }
+    await setupLiveNotification();
+
+    await refreshLive();
+
+    await readDeviceTime();
+
+    await readHistoryStatus();
 
 
   }catch(error){
 
-    console.error(error);
-
-
     log(
-      `ERROR: ${error.name} — ${error.message}`
+      `連線失敗：${error.message}`,
+      "err"
     );
 
-
-    $("status").innerHTML =
-      '<span class="err">' +
-      `${error.name} — ${error.message}` +
-      '</span>';
-
-
-    $("connect").disabled =
-      false;
-
-
-    $("disconnect").disabled =
-      true;
+    console.error(error);
 
   }
 
 }
 
 
-/* ==================================================
-   DISCONNECTED
-================================================== */
+/* =====================================================
+   斷線
+===================================================== */
 
-function disconnected(){
-
-  log(
-    "GATT disconnected"
-  );
-
-
-  $("status").innerHTML =
-    '<span class="warn">已斷線</span>';
+disconnectBtn.addEventListener(
+  "click",
+  disconnectDevice
+);
 
 
-  $("connect").disabled =
-    false;
-
-
-  $("disconnect").disabled =
-    true;
-
-
-  $("syncTime").disabled =
-    true;
-
-
-  $("queryHistory").disabled =
-    true;
-
-
-  dataCharacteristic = null;
-  batteryCharacteristic = null;
-
-  timeCharacteristic = null;
-
-  cca4Characteristic = null;
-  ccd7Characteristic = null;
-
-  historyCountCharacteristic = null;
-  historyIndexCharacteristic = null;
-  historyDataCharacteristic = null;
-  historyNotifyCharacteristic = null;
-
-  server = null;
-  service = null;
-
-}
-
-
-/* ==================================================
-   DISCONNECT
-================================================== */
-
-async function disconnect(){
+function disconnectDevice(){
 
   try{
 
-    if(dataCharacteristic){
-
-      try{
-
-        await dataCharacteristic
-          .stopNotifications();
-
-      }catch(error){}
-
-    }
-
+    stopHistory();
 
     if(
       device &&
@@ -2041,8 +1103,8 @@ async function disconnect(){
   }catch(error){
 
     log(
-      "Disconnect ERROR: " +
-      error.message
+      `斷線錯誤：${error.message}`,
+      "err"
     );
 
   }
@@ -2050,51 +1112,1792 @@ async function disconnect(){
 }
 
 
-/* ==================================================
-   BUTTONS
-================================================== */
+function handleDisconnected(){
 
-$("connect").addEventListener(
+  setConnectedUI(false);
+
+  chars = {};
+
+  log(
+    "Bluetooth 裝置已斷線",
+    "warn"
+  );
+}
+
+
+/* =====================================================
+   即時資料 CCC1
+===================================================== */
+
+async function setupLiveNotification(){
+
+  if(!chars.DATA){
+    return;
+  }
+
+
+  try{
+
+    liveNotifyHandler =
+      event => {
+
+        parseLiveData(
+          event.target.value
+        );
+
+      };
+
+
+    chars.DATA.addEventListener(
+      "characteristicvaluechanged",
+      liveNotifyHandler
+    );
+
+
+    await chars.DATA.startNotifications();
+
+
+    log(
+      "CCC1 即時資料通知已啟用",
+      "ok"
+    );
+
+
+  }catch(error){
+
+    log(
+      `CCC1 Notification 啟用失敗：${error.message}`,
+      "warn"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   讀取即時資料
+===================================================== */
+
+refreshLiveBtn.addEventListener(
   "click",
-  connect
+  refreshLive
 );
 
 
-$("disconnect").addEventListener(
-  "click",
-  disconnect
+async function refreshLive(){
+
+  if(!chars.DATA){
+    return;
+  }
+
+
+  try{
+
+    const value =
+      await chars.DATA.readValue();
+
+
+    parseLiveData(value);
+
+
+  }catch(error){
+
+    log(
+      `讀取 CCC1 失敗：${error.message}`,
+      "err"
+    );
+
+  }
+
+}
+
+
+function parseLiveData(dataView){
+
+  const bytes =
+    new Uint8Array(
+      dataView.buffer,
+      dataView.byteOffset,
+      dataView.byteLength
+    );
+
+
+  if(bytes.length < 5){
+
+    log(
+      `CCC1 長度異常：${bytes.length} bytes`,
+      "warn"
+    );
+
+    return;
+  }
+
+
+  const temperature =
+    int16LE(bytes,0) / 100;
+
+
+  const humidity =
+    bytes[2];
+
+
+  const millivolts =
+    bytes[3] |
+    (bytes[4] << 8);
+
+
+  const voltage =
+    millivolts / 1000;
+
+
+  $("temperature").textContent =
+    `${temperature.toFixed(2)} °C`;
+
+
+  $("humidity").textContent =
+    `${humidity} %`;
+
+
+  $("voltage").textContent =
+    `${voltage.toFixed(3)} V`;
+
+
+  log(
+    `CCC1 = ${bytesToHex(bytes)} → ` +
+    `${temperature.toFixed(2)} °C / ` +
+    `${humidity}% / ` +
+    `${voltage.toFixed(3)} V`,
+    "ok"
+  );
+
+}
+
+
+/* =====================================================
+   電量 CCC4
+===================================================== */
+
+async function readBattery(){
+
+  if(!chars.BATTERY){
+    return;
+  }
+
+
+  try{
+
+    const value =
+      await chars.BATTERY.readValue();
+
+
+    const bytes =
+      new Uint8Array(
+        value.buffer,
+        value.byteOffset,
+        value.byteLength
+      );
+
+
+    if(bytes.length > 0){
+
+      const battery =
+        bytes[0];
+
+
+      $("battery").textContent =
+        `${battery} %`;
+
+
+      log(
+        `CCC4 = ${bytesToHex(bytes)} → ${battery}%`,
+        "ok"
+      );
+
+    }
+
+  }catch(error){
+
+    log(
+      `讀取 CCC4 失敗：${error.message}`,
+      "err"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   順便定期更新電量
+===================================================== */
+
+setInterval(
+  () => {
+
+    if(
+      device &&
+      device.gatt &&
+      device.gatt.connected
+    ){
+
+      readBattery();
+
+    }
+
+  },
+  30000
 );
 
 
-$("syncTime").addEventListener(
+/* =====================================================
+   裝置時間
+   CCB7:
+   4 bytes Unix timestamp LE
+   1 byte timezone
+===================================================== */
+
+readTimeBtn.addEventListener(
   "click",
-  syncTime
+  readDeviceTime
 );
 
 
-$("queryHistory").addEventListener(
+async function readDeviceTime(){
+
+  if(!chars.TIME){
+    return;
+  }
+
+
+  try{
+
+    const value =
+      await chars.TIME.readValue();
+
+
+    const bytes =
+      new Uint8Array(
+        value.buffer,
+        value.byteOffset,
+        value.byteLength
+      );
+
+
+    if(bytes.length < 5){
+
+      log(
+        `CCB7 長度異常：${bytes.length} bytes`,
+        "warn"
+      );
+
+      return;
+    }
+
+
+    const timestamp =
+      uint32LE(bytes,0);
+
+
+    const timezoneRaw =
+      bytes[4];
+
+
+    const timezone =
+      timezoneRaw >= 128
+        ? timezoneRaw - 256
+        : timezoneRaw;
+
+
+    const date =
+      new Date(timestamp * 1000);
+
+
+    $("deviceTime").textContent =
+      date.toLocaleString(
+        "zh-TW",
+        {
+          hour12:false
+        }
+      );
+
+
+    $("deviceTimezone").textContent =
+      `UTC${timezone >= 0 ? "+" : ""}${timezone}`;
+
+
+    log(
+      `CCB7 = ${bytesToHex(bytes)} → ` +
+      `${date.toLocaleString("zh-TW",{hour12:false})}, ` +
+      `UTC${timezone >= 0 ? "+" : ""}${timezone}`,
+      "ok"
+    );
+
+
+  }catch(error){
+
+    log(
+      `讀取 CCB7 失敗：${error.message}`,
+      "err"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   同步目前時間
+===================================================== */
+
+syncTimeBtn.addEventListener(
   "click",
-  queryHistoryCapacity
+  syncDeviceTime
 );
 
 
-/* ==================================================
-   START
-================================================== */
+async function syncDeviceTime(){
 
-log("Ready");
+  if(!chars.TIME){
+    return;
+  }
+
+
+  try{
+
+    const timestamp =
+      Math.floor(
+        Date.now() / 1000
+      );
+
+
+    const timezone =
+      -new Date().getTimezoneOffset() / 60;
+
+
+    const packet =
+      new Uint8Array(5);
+
+
+    packet.set(
+      uint32BytesLE(timestamp),
+      0
+    );
+
+
+    packet[4] =
+      timezone & 0xff;
+
+
+    log(
+      `寫入 CCB7：${bytesToHex(packet)}`
+    );
+
+
+    await chars.TIME.writeValue(
+      packet
+    );
+
+
+    log(
+      "時間寫入完成，重新讀取確認...",
+      "ok"
+    );
+
+
+    await sleep(300);
+
+
+    await readDeviceTime();
+
+
+  }catch(error){
+
+    log(
+      `同步時間失敗：${error.message}`,
+      "err"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   歷史狀態 CCB9
+===================================================== */
+
+historyStatusBtn.addEventListener(
+  "click",
+  readHistoryStatus
+);
+
+
+async function readHistoryStatus(){
+
+  if(!chars.HISTORY_COUNT){
+    return;
+  }
+
+
+  try{
+
+    const value =
+      await chars.HISTORY_COUNT.readValue();
+
+
+    const bytes =
+      new Uint8Array(
+        value.buffer,
+        value.byteOffset,
+        value.byteLength
+      );
+
+
+    if(bytes.length < 8){
+
+      log(
+        `CCB9 長度異常：${bytes.length} bytes`,
+        "warn"
+      );
+
+      return;
+    }
+
+
+    historyTotal =
+      uint32LE(bytes,0);
+
+
+    historyStored =
+      uint32LE(bytes,4);
+
+
+    historyOldest =
+      historyStored > 0
+        ? historyTotal - historyStored + 1
+        : 0;
+
+
+    historyNewest =
+      historyStored > 0
+        ? historyTotal
+        : 0;
+
+
+    $("totalRecords").textContent =
+      historyTotal.toLocaleString();
+
+
+    $("storedRecords").textContent =
+      historyStored.toLocaleString();
+
+
+    $("oldestIndex").textContent =
+      historyStored > 0
+        ? historyOldest.toLocaleString()
+        : "--";
+
+
+    $("newestIndex").textContent =
+      historyStored > 0
+        ? historyNewest.toLocaleString()
+        : "--";
+
+
+    log(
+      `CCB9 = ${bytesToHex(bytes)} → ` +
+      `Total=${historyTotal}, ` +
+      `Stored=${historyStored}, ` +
+      `Oldest=${historyOldest}, ` +
+      `Newest=${historyNewest}`,
+      "ok"
+    );
+
+
+  }catch(error){
+
+    log(
+      `讀取 CCB9 失敗：${error.message}`,
+      "err"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   CCBC 歷史通知解析
+=====================================================
+
+   14 bytes:
+
+   0-3   Index
+   4-7   Unix timestamp
+   8-9   Max Temperature /100
+   10    Max Humidity
+   11-12 Min Temperature /100
+   13    Min Humidity
+===================================================== */
+
+function parseHistoryRecord(dataView){
+
+  const bytes =
+    new Uint8Array(
+      dataView.buffer,
+      dataView.byteOffset,
+      dataView.byteLength
+    );
+
+
+  if(bytes.length < 14){
+
+    log(
+      `CCBC 資料長度異常：${bytes.length} bytes`,
+      "warn"
+    );
+
+    return null;
+  }
+
+
+  const index =
+    uint32LE(bytes,0);
+
+
+  const timestamp =
+    uint32LE(bytes,4);
+
+
+  const maxTemp =
+    int16LE(bytes,8) / 100;
+
+
+  const maxHumidity =
+    bytes[10];
+
+
+  const minTemp =
+    int16LE(bytes,11) / 100;
+
+
+  const minHumidity =
+    bytes[13];
+
+
+  const record = {
+
+    index:index,
+
+    timestamp:timestamp,
+
+    date:new Date(
+      timestamp * 1000
+    ),
+
+    maxTemp:maxTemp,
+
+    maxHumidity:maxHumidity,
+
+    minTemp:minTemp,
+
+    minHumidity:minHumidity
+
+  };
+
+
+  log(
+    `CCBC = ${bytesToHex(bytes)} → ` +
+    `Index=${index}, ` +
+    `Time=${record.date.toLocaleString("zh-TW",{hour12:false})}, ` +
+    `Min=${minTemp.toFixed(2)}°C/${minHumidity}%, ` +
+    `Max=${maxTemp.toFixed(2)}°C/${maxHumidity}%`,
+    "ok"
+  );
+
+
+  return record;
+}
+
+
+/* =====================================================
+   新增歷史紀錄
+===================================================== */
+
+function addHistoryRecord(record){
+
+  if(!record){
+    return;
+  }
+
+
+  const exists =
+    historyRecords.some(
+      r => r.index === record.index
+    );
+
+
+  if(exists){
+    return;
+  }
+
+
+  historyRecords.push(record);
+
+
+  historyRecords.sort(
+    (a,b) => a.index - b.index
+  );
+
+
+  renderHistoryTable();
+
+
+  downloadCsvBtn.disabled =
+    historyRecords.length === 0;
+
+}
+
+
+/* =====================================================
+   CCBA 寫入 Index
+===================================================== */
+
+async function writeHistoryIndex(index){
+
+  const packet =
+    uint32BytesLE(index);
+
+
+  log(
+    `寫入 CCBA Index=${index}：${bytesToHex(packet)}`
+  );
+
+
+  await chars.HISTORY_INDEX.writeValue(
+    packet
+  );
+
+}
+
+
+/* =====================================================
+   等待指定 Index 出現
+===================================================== */
+
+async function waitForHistoryIndex(
+  index,
+  timeout=1200
+){
+
+  const start =
+    Date.now();
+
+
+  while(
+    Date.now() - start < timeout
+  ){
+
+    if(
+      historyRecords.some(
+        r => r.index === index
+      )
+    ){
+
+      return true;
+
+    }
+
+
+    await sleep(50);
+
+  }
+
+
+  return false;
+}
+
+
+/* =====================================================
+   讀取 CCBB
+===================================================== */
+
+async function readHistoryLast(){
+
+  if(!chars.HISTORY_LAST){
+    return null;
+  }
+
+
+  try{
+
+    const value =
+      await chars.HISTORY_LAST.readValue();
+
+
+    const record =
+      parseHistoryRecord(value);
+
+
+    if(record){
+
+      addHistoryRecord(record);
+
+    }
+
+
+    return record;
+
+
+  }catch(error){
+
+    log(
+      `讀取 CCBB 失敗：${error.message}`,
+      "warn"
+    );
+
+    return null;
+
+  }
+
+}
+
+
+/* =====================================================
+   歷史 Notification
+===================================================== */
+
+async function startHistoryNotification(){
+
+  if(!chars.HISTORY_NOTIFY){
+    return;
+  }
+
+
+  try{
+
+    historyNotifyHandler =
+      event => {
+
+        const record =
+          parseHistoryRecord(
+            event.target.value
+          );
+
+
+        if(record){
+
+          addHistoryRecord(record);
+
+        }
+
+      };
+
+
+    chars.HISTORY_NOTIFY.addEventListener(
+      "characteristicvaluechanged",
+      historyNotifyHandler
+    );
+
+
+    await chars.HISTORY_NOTIFY.startNotifications();
+
+
+    log(
+      "CCBC 歷史 Notification 已啟用",
+      "ok"
+    );
+
+
+  }catch(error){
+
+    log(
+      `啟用 CCBC Notification 失敗：${error.message}`,
+      "warn"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   停止歷史 Notification
+===================================================== */
+
+async function stopHistoryNotification(){
+
+  try{
+
+    if(
+      chars.HISTORY_NOTIFY &&
+      historyNotifyHandler
+    ){
+
+      chars.HISTORY_NOTIFY.removeEventListener(
+        "characteristicvaluechanged",
+        historyNotifyHandler
+      );
+
+    }
+
+
+    if(chars.HISTORY_NOTIFY){
+
+      try{
+
+        await chars.HISTORY_NOTIFY.stopNotifications();
+
+      }catch(e){
+
+        /* 有些瀏覽器在裝置已斷線時會失敗，忽略 */
+
+      }
+
+    }
+
+  }catch(error){
+
+    log(
+      `停止 CCBC Notification：${error.message}`,
+      "warn"
+    );
+
+  }
+
+
+  historyNotifyHandler = null;
+}
+
+
+/* =====================================================
+   讀取最近 N 筆
+===================================================== */
+
+readHistoryBtn.addEventListener(
+  "click",
+  readRecentHistory
+);
+
+
+async function readRecentHistory(){
+
+  if(!chars.HISTORY_INDEX){
+
+    alert("尚未連線裝置");
+
+    return;
+  }
+
+
+  if(historyRunning){
+
+    return;
+  }
+
+
+  let count =
+    parseInt(
+      historyCountInput.value,
+      10
+    );
+
+
+  if(
+    !Number.isFinite(count) ||
+    count < 1
+  ){
+
+    count = 96;
+
+  }
+
+
+  count =
+    Math.min(
+      count,
+      96
+    );
+
+
+  historyCountInput.value =
+    count;
+
+
+  /* 先重新讀取狀態 */
+
+  await readHistoryStatus();
+
+
+  if(historyStored <= 0){
+
+    alert("裝置目前沒有歷史資料");
+
+    return;
+  }
+
+
+  const endIndex =
+    historyNewest;
+
+
+  const startIndex =
+    Math.max(
+      historyOldest,
+      endIndex - count + 1
+    );
+
+
+  const expectedCount =
+    endIndex - startIndex + 1;
+
+
+  historyRecords = [];
+
+
+  renderHistoryTable();
+
+
+  downloadCsvBtn.disabled =
+    true;
+
+
+  historyRunning = true;
+
+
+  stopHistoryBtn.disabled =
+    false;
+
+
+  readHistoryBtn.disabled =
+    true;
+
+
+  $("historyProgress").style.width =
+    "0%";
+
+
+  $("historyProgressText").textContent =
+    `準備讀取 ${expectedCount} 筆：` +
+    `${startIndex} ～ ${endIndex}`;
+
+
+  log(
+    `開始讀取最近 ${expectedCount} 筆歷史：` +
+    `Index ${startIndex} ～ ${endIndex}`,
+    "ok"
+  );
+
+
+  try{
+
+    /*
+     * 第一階段：
+     * 啟用 CCBC Notification。
+     */
+
+    await startHistoryNotification();
+
+
+    /*
+     * 第二階段：
+     * 寫入起始 Index。
+     *
+     * 某些韌體會從指定 Index 開始
+     * 自動透過 CCBC 串流歷史資料。
+     */
+
+    await writeHistoryIndex(
+      startIndex
+    );
+
+
+    /*
+     * 等待一段時間讓 CCBC 自動串流。
+     */
+
+    const streamWait =
+      Math.min(
+        5000 + expectedCount * 100,
+        15000
+      );
+
+
+    const streamStart =
+      Date.now();
+
+
+    while(
+      historyRunning &&
+      Date.now() - streamStart < streamWait
+    ){
+
+      const received =
+        historyRecords.length;
+
+
+      const percent =
+        Math.min(
+          100,
+          Math.round(
+            received /
+            expectedCount *
+            100
+          )
+        );
+
+
+      $("historyProgress").style.width =
+        `${percent}%`;
+
+
+      $("historyProgressText").textContent =
+        `CCBC 自動讀取：` +
+        `${received} / ${expectedCount}`;
+
+
+      if(received >= expectedCount){
+
+        break;
+
+      }
+
+
+      await sleep(100);
+
+    }
+
+
+    /*
+     * 第三階段：
+     * 如果 CCBC 沒有完整串流，
+     * 逐 Index 透過 CCBA 指定位置，
+     * 再由 CCBB 讀取。
+     *
+     * 這也是這個程式的重要 fallback。
+     */
+
+    if(
+      historyRunning &&
+      historyRecords.length < expectedCount
+    ){
+
+      log(
+        `CCBC 自動串流目前取得 ` +
+        `${historyRecords.length}/${expectedCount} 筆，` +
+        `開始逐 Index fallback...`,
+        "warn"
+      );
+
+
+      for(
+        let index = startIndex;
+        index <= endIndex;
+        index++
+      ){
+
+        if(!historyRunning){
+          break;
+        }
+
+
+        if(
+          historyRecords.some(
+            r => r.index === index
+          )
+        ){
+
+          updateHistoryProgress(
+            startIndex,
+            endIndex
+          );
+
+          continue;
+
+        }
+
+
+        try{
+
+          await writeHistoryIndex(
+            index
+          );
+
+
+          /*
+           * 先等待 CCBC。
+           */
+
+          let received =
+            await waitForHistoryIndex(
+              index,
+              900
+            );
+
+
+          /*
+           * 如果 CCBC 沒有回來，
+           * 嘗試直接讀 CCBB。
+           */
+
+          if(!received){
+
+            const record =
+              await readHistoryLast();
+
+
+            if(
+              record &&
+              record.index === index
+            ){
+
+              received = true;
+
+            }
+
+          }
+
+
+          /*
+           * 最後更新進度。
+           */
+
+          updateHistoryProgress(
+            startIndex,
+            endIndex
+          );
+
+
+        }catch(error){
+
+          log(
+            `Index ${index} 讀取失敗：${error.message}`,
+            "warn"
+          );
+
+        }
+
+      }
+
+    }
+
+
+    /*
+     * 最後整理資料。
+     */
+
+    historyRecords =
+      historyRecords
+        .filter(
+          r =>
+            r.index >= startIndex &&
+            r.index <= endIndex
+        )
+        .sort(
+          (a,b) =>
+            a.index - b.index
+        );
+
+
+    renderHistoryTable();
+
+
+    const actual =
+      historyRecords.length;
+
+
+    const missing =
+      expectedCount - actual;
+
+
+    $("historyProgress").style.width =
+      "100%";
+
+
+    $("historyProgressText").textContent =
+      `完成：${actual} / ${expectedCount} 筆`;
+
+
+    if(missing > 0){
+
+      log(
+        `讀取完成，但缺少 ${missing} 筆`,
+        "warn"
+      );
+
+    }else{
+
+      log(
+        `歷史讀取完成：${actual} 筆`,
+        "ok"
+      );
+
+    }
+
+
+    downloadCsvBtn.disabled =
+      actual === 0;
+
+
+  }catch(error){
+
+    log(
+      `歷史讀取錯誤：${error.message}`,
+      "err"
+    );
+
+
+    $("historyProgressText").textContent =
+      `讀取失敗：${error.message}`;
+
+
+  }finally{
+
+    historyRunning =
+      false;
+
+
+    stopHistoryBtn.disabled =
+      true;
+
+
+    readHistoryBtn.disabled =
+      !(
+        device &&
+        device.gatt &&
+        device.gatt.connected
+      );
+
+
+    await stopHistoryNotification();
+
+  }
+
+}
+
+
+/* =====================================================
+   進度
+===================================================== */
+
+function updateHistoryProgress(
+  startIndex,
+  endIndex
+){
+
+  const total =
+    endIndex - startIndex + 1;
+
+
+  const current =
+    historyRecords.filter(
+      r =>
+        r.index >= startIndex &&
+        r.index <= endIndex
+    ).length;
+
+
+  const percent =
+    Math.min(
+      100,
+      Math.round(
+        current / total * 100
+      )
+    );
+
+
+  $("historyProgress").style.width =
+    `${percent}%`;
+
+
+  $("historyProgressText").textContent =
+    `讀取中：${current} / ${total} 筆 ` +
+    `(${percent}%)`;
+
+}
+
+
+/* =====================================================
+   停止歷史
+===================================================== */
+
+stopHistoryBtn.addEventListener(
+  "click",
+  stopHistory
+);
+
+
+function stopHistory(){
+
+  historyRunning =
+    false;
+
+
+  stopHistoryBtn.disabled =
+    true;
+
+
+  readHistoryBtn.disabled =
+    !(
+      device &&
+      device.gatt &&
+      device.gatt.connected
+    );
+
+
+  $("historyProgressText").textContent =
+    `已停止，目前取得 ${historyRecords.length} 筆`;
+
+
+  log(
+    "使用者停止歷史讀取",
+    "warn"
+  );
+
+
+  stopHistoryNotification();
+
+}
+
+
+/* =====================================================
+   歷史表格
+===================================================== */
+
+function renderHistoryTable(){
+
+  const tbody =
+    $("historyTableBody");
+
+
+  tbody.innerHTML = "";
+
+
+  historyRecords.forEach(
+    (record,index) => {
+
+      const tr =
+        document.createElement("tr");
+
+
+      const dateText =
+        record.date.toLocaleString(
+          "zh-TW",
+          {
+            year:"numeric",
+            month:"2-digit",
+            day:"2-digit",
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit",
+            hour12:false
+          }
+        );
+
+
+      tr.innerHTML = `
+
+        <td>${index + 1}</td>
+
+        <td>${record.index}</td>
+
+        <td>${dateText}</td>
+
+        <td>${record.minTemp.toFixed(2)} °C</td>
+
+        <td>${record.minHumidity} %</td>
+
+        <td>${record.maxTemp.toFixed(2)} °C</td>
+
+        <td>${record.maxHumidity} %</td>
+
+      `;
+
+
+      tbody.appendChild(tr);
+
+    }
+  );
+
+}
+
+
+/* =====================================================
+   CSV
+===================================================== */
+
+downloadCsvBtn.addEventListener(
+  "click",
+  downloadCSV
+);
+
+
+function csvEscape(value){
+
+  const text =
+    String(value ?? "");
+
+
+  if(
+    text.includes(",") ||
+    text.includes('"') ||
+    text.includes("\n")
+  ){
+
+    return '"' +
+      text.replaceAll('"','""') +
+      '"';
+
+  }
+
+
+  return text;
+}
+
+
+function downloadCSV(){
+
+  if(
+    !historyRecords ||
+    historyRecords.length === 0
+  ){
+
+    return;
+  }
+
+
+  const rows = [];
+
+
+  rows.push([
+
+    "Index",
+    "Timestamp",
+    "時間",
+    "最低溫度_C",
+    "最低濕度_percent",
+    "最高溫度_C",
+    "最高濕度_percent"
+
+  ]);
+
+
+  for(
+    const record of historyRecords
+  ){
+
+    rows.push([
+
+      record.index,
+
+      record.timestamp,
+
+      record.date.toLocaleString(
+        "zh-TW",
+        {
+          hour12:false
+        }
+      ),
+
+      record.minTemp.toFixed(2),
+
+      record.minHumidity,
+
+      record.maxTemp.toFixed(2),
+
+      record.maxHumidity
+
+    ]);
+
+  }
+
+
+  const csv =
+    "\uFEFF" +
+    rows
+      .map(
+        row =>
+          row
+            .map(csvEscape)
+            .join(",")
+      )
+      .join("\r\n");
+
+
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8;"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(blob);
+
+
+  const a =
+    document.createElement("a");
+
+
+  const now =
+    new Date();
+
+
+  const filename =
+    `LYWSD02_history_${now
+      .toISOString()
+      .slice(0,10)}.csv`;
+
+
+  a.href =
+    url;
+
+  a.download =
+    filename;
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+
+  URL.revokeObjectURL(url);
+
+
+  log(
+    `CSV 已產生：${filename}`,
+    "ok"
+  );
+
+}
+
+
+/* =====================================================
+   GATT Explorer
+===================================================== */
+
+exploreBtn.addEventListener(
+  "click",
+  exploreGATT
+);
+
+
+async function exploreGATT(){
+
+  if(!server){
+
+    return;
+  }
+
+
+  const output =
+    $("gattOutput");
+
+
+  output.textContent =
+    "";
+
+
+  try{
+
+    const services =
+      await server.getPrimaryServices();
+
+
+    let text = "";
+
+
+    for(
+      const svc of services
+    ){
+
+      text +=
+        `SERVICE ${svc.uuid}\n`;
+
+
+      let characteristics;
+
+
+      try{
+
+        characteristics =
+          await svc.getCharacteristics();
+
+      }catch(error){
+
+        text +=
+          `  [無法讀取 characteristics：${error.message}]\n\n`;
+
+        continue;
+
+      }
+
+
+      for(
+        const c of characteristics
+      ){
+
+        const props =
+          [];
+
+
+        if(c.properties.read){
+          props.push("read");
+        }
+
+        if(c.properties.write){
+          props.push("write");
+        }
+
+        if(c.properties.writeWithoutResponse){
+          props.push("writeWithoutResponse");
+        }
+
+        if(c.properties.notify){
+          props.push("notify");
+        }
+
+        if(c.properties.indicate){
+          props.push("indicate");
+        }
+
+
+        text +=
+          `  ${c.uuid} [${props.join(", ")}]\n`;
+
+      }
+
+
+      text += "\n";
+
+    }
+
+
+    output.textContent =
+      text;
+
+
+    log(
+      `GATT Explorer 完成：${services.length} 個 Service`,
+      "ok"
+    );
+
+
+  }catch(error){
+
+    output.textContent =
+      `錯誤：${error.message}`;
+
+
+    log(
+      `GATT Explorer 失敗：${error.message}`,
+      "err"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   歷史筆數輸入
+===================================================== */
+
+historyCountInput.addEventListener(
+  "input",
+  () => {
+
+    let count =
+      parseInt(
+        historyCountInput.value,
+        10
+      );
+
+
+    if(
+      !Number.isFinite(count) ||
+      count < 1
+    ){
+
+      count = 1;
+
+    }
+
+
+    if(count > 96){
+
+      count = 96;
+
+    }
+
+
+    historyCountInput.value =
+      count;
+
+
+    readHistoryBtn.textContent =
+      `📊 讀取最近 ${count} 筆歷史`;
+
+  }
+);
+
+
+/* =====================================================
+   初始化
+===================================================== */
+
+setConnectedUI(false);
+
+
+/*
+ * 預設按鈕文字
+ */
+
+readHistoryBtn.textContent =
+  "📊 讀取最近 96 筆歷史";
 
 
 log(
-  "Web Bluetooth = " +
-  ("bluetooth" in navigator)
+  "LYWSD02 BLE 工具初始化完成",
+  "ok"
 );
 
 
-log(
-  "Secure Context = " +
-  window.isSecureContext
+if(!navigator.bluetooth){
+
+  log(
+    "警告：目前瀏覽器沒有 navigator.bluetooth",
+    "warn"
+  );
+
+}
+
+
+/*
+ * 每 60 秒重新讀取一次即時資料。
+ */
+
+setInterval(
+  () => {
+
+    if(
+      device &&
+      device.gatt &&
+      device.gatt.connected
+    ){
+
+      refreshLive();
+
+    }
+
+  },
+  60000
 );
+
 
 </script>
 
