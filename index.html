@@ -1,40 +1,895 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BLE Test</title><style>
-body{font-family:system-ui,sans-serif;background:#f3f4f6;margin:0;padding:20px;color:#111827}main{max-width:800px;margin:auto}.card{background:#fff;padding:20px;border-radius:16px;margin-bottom:16px;box-shadow:0 3px 15px #0001}button{background:#111827;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-size:16px}pre{background:#111827;color:#d1d5db;padding:14px;border-radius:10px;overflow:auto;white-space:pre-wrap}.muted{color:#6b7280}.ok{color:#15803d}.err{color:#b91c1c}
-</style></head><body><main>
-<div class="card"><h1>LYWSD02MMC BLE 測試工具</h1><p class="muted">這版只測試 Web Bluetooth，不使用 Xiaomi UUID。</p><button id="connect">🔵 Connect Bluetooth</button><p id="status">尚未開始</p></div>
-<div class="card"><h2>Device</h2><pre id="device">--</pre></div>
-<div class="card"><h2>GATT Services / Characteristics</h2><pre id="gatt">尚未連線</pre></div>
-<div class="card"><h2>Log</h2><pre id="log"></pre></div>
-</main><script>
-const $=id=>document.getElementById(id);
-function log(s){$("log").textContent+="["+new Date().toLocaleTimeString()+"] "+s+"\n";}
-async function main(){
- log("開始"); log("secure context = "+location.isSecureContext); log("navigator.bluetooth = "+("bluetooth" in navigator));
- if(!("bluetooth" in navigator)){ $("status").innerHTML='<span class="err">沒有 navigator.bluetooth</span>'; return; }
- try{
-  log("呼叫 requestDevice()");
-  const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:["generic_access","generic_attribute","battery_service"]});
-  $("status").innerHTML='<span class="ok">✓ 已選擇裝置</span>';
-  $("device").textContent="name: "+(device.name||"(無名稱)")+"\nid: "+device.id;
-  log("選到: "+(device.name||"(無名稱)")); log("id: "+device.id);
-  device.addEventListener("gattserverdisconnected",()=>{log("GATT disconnected");$("status").textContent="已斷線";});
-  log("開始 GATT connect...");
-  const server=await device.gatt.connect(); log("GATT connected");
-  const services=await server.getPrimaryServices(); log("Primary services: "+services.length);
-  let out="";
-  for(const service of services){
-   out+="SERVICE\n"+service.uuid+"\n";
-   try{
-    const chars=await service.getCharacteristics(); out+="  Characteristics: "+chars.length+"\n";
-    for(const c of chars){
-     const p=[]; if(c.properties.broadcast)p.push("broadcast"); if(c.properties.read)p.push("read"); if(c.properties.writeWithoutResponse)p.push("writeWithoutResponse"); if(c.properties.write)p.push("write"); if(c.properties.notify)p.push("notify"); if(c.properties.indicate)p.push("indicate");
-     out+="    "+c.uuid+" ["+p.join(", ")+"]\n";
-    }
-   }catch(e){out+="  ERROR: "+e.message+"\n";}
-   out+="\n";
-  }
-  $("gatt").textContent=out||"沒有 primary service"; $("status").innerHTML='<span class="ok">✓ GATT 探索完成</span>';
- }catch(e){log("ERROR: "+e.name+" — "+e.message);$("status").innerHTML='<span class="err">'+e.name+" — "+e.message+"</span>";}
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>LYWSD02MMC BLE Monitor</title>
+
+<style>
+body{
+  font-family:system-ui,sans-serif;
+  background:#f3f4f6;
+  margin:0;
+  padding:20px;
+  color:#111827
 }
-$("connect").onclick=main; log("Ready");
-</script></body></html>
+
+main{
+  max-width:900px;
+  margin:auto
+}
+
+.card{
+  background:#fff;
+  padding:20px;
+  border-radius:16px;
+  margin-bottom:16px;
+  box-shadow:0 3px 15px #0001
+}
+
+button{
+  background:#111827;
+  color:#fff;
+  border:0;
+  border-radius:10px;
+  padding:12px 18px;
+  font-size:16px;
+  cursor:pointer
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed
+}
+
+.value{
+  font-size:42px;
+  font-weight:700;
+  margin:8px 0
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:12px
+}
+
+.metric{
+  background:#f9fafb;
+  border-radius:12px;
+  padding:16px
+}
+
+.label{
+  color:#6b7280;
+  font-size:14px
+}
+
+pre{
+  background:#111827;
+  color:#d1d5db;
+  padding:14px;
+  border-radius:10px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-all
+}
+
+.muted{
+  color:#6b7280
+}
+
+.ok{
+  color:#15803d
+}
+
+.err{
+  color:#b91c1c
+}
+
+.warn{
+  color:#b45309
+}
+
+hr{
+  border:0;
+  border-top:1px solid #e5e7eb;
+  margin:18px 0
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<div class="card">
+  <h1>🌡️ LYWSD02MMC BLE Monitor</h1>
+
+  <p class="muted">
+    Xiaomi / Mijia BLE 溫濕度計測試工具
+  </p>
+
+  <button id="connect">
+    🔵 Connect Bluetooth
+  </button>
+
+  <button id="disconnect" disabled>
+    Disconnect
+  </button>
+
+  <p id="status">尚未連線</p>
+</div>
+
+
+<div class="card">
+
+  <h2>即時數值</h2>
+
+  <div class="grid">
+
+    <div class="metric">
+      <div class="label">🌡️ Temperature</div>
+      <div class="value">
+        <span id="temperature">--</span>
+      </div>
+      <div>°C</div>
+    </div>
+
+    <div class="metric">
+      <div class="label">💧 Humidity</div>
+      <div class="value">
+        <span id="humidity">--</span>
+      </div>
+      <div>%</div>
+    </div>
+
+    <div class="metric">
+      <div class="label">🔋 Battery</div>
+      <div class="value">
+        <span id="battery">--</span>
+      </div>
+      <div>%</div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<div class="card">
+
+  <h2>Device</h2>
+
+  <pre id="device">--</pre>
+
+</div>
+
+
+<div class="card">
+
+  <h2>Notification</h2>
+
+  <p class="muted">
+    EBE0CCBC
+  </p>
+
+  <pre id="notification">尚未收到資料</pre>
+
+</div>
+
+
+<div class="card">
+
+  <h2>GATT Services / Characteristics</h2>
+
+  <pre id="gatt">尚未連線</pre>
+
+</div>
+
+
+<div class="card">
+
+  <h2>Log</h2>
+
+  <pre id="log"></pre>
+
+</div>
+
+</main>
+
+
+<script>
+
+const $ = id => document.getElementById(id);
+
+
+/*
+ * 你的裝置實際掃到的 Service
+ */
+const SERVICE_UUID =
+  "ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6";
+
+
+/*
+ * 你的裝置實際掃到的 Notification characteristic
+ */
+const DATA_UUID =
+  "ebe0ccbc-7a0a-4b0c-8a1a-6ff2997da3a6";
+
+
+let device = null;
+let server = null;
+let dataCharacteristic = null;
+
+
+/* --------------------------------------------------
+   Log
+-------------------------------------------------- */
+
+function log(message){
+
+  const time =
+    new Date().toLocaleTimeString();
+
+  $("log").textContent +=
+    `[${time}] ${message}\n`;
+
+  $("log").scrollTop =
+    $("log").scrollHeight;
+}
+
+
+/* --------------------------------------------------
+   HEX helpers
+-------------------------------------------------- */
+
+function dataViewToHex(view){
+
+  const bytes = [];
+
+  for(let i = 0; i < view.byteLength; i++){
+
+    bytes.push(
+      view.getUint8(i)
+        .toString(16)
+        .padStart(2,"0")
+    );
+
+  }
+
+  return bytes.join(" ");
+}
+
+
+function dataViewToArray(view){
+
+  const result = [];
+
+  for(let i = 0; i < view.byteLength; i++){
+
+    result.push(view.getUint8(i));
+
+  }
+
+  return result;
+}
+
+
+/* --------------------------------------------------
+   Notification parser
+-------------------------------------------------- */
+
+function parseNotification(event){
+
+  const value =
+    event.target.value;
+
+  const bytes =
+    dataViewToArray(value);
+
+  const hex =
+    dataViewToHex(value);
+
+
+  $("notification").textContent =
+    `Length: ${bytes.length} bytes\n` +
+    `HEX: ${hex}\n` +
+    `DEC: ${bytes.join(", ")}`;
+
+
+  log(
+    `EBE0CCBC notification: ${hex}`
+  );
+
+
+  /*
+   * 常見 Xiaomi EBE0 系列格式：
+   *
+   * byte 0-1 = temperature
+   * byte 2-3 = humidity
+   *
+   * 但不同型號/韌體可能不同。
+   *
+   * 因此這裡只在長度足夠時進行候選解析，
+   * 同時保留原始 HEX。
+   */
+
+
+  if(bytes.length >= 4){
+
+    /*
+     * little-endian signed 16-bit
+     */
+    const rawTemp =
+      value.getInt16(0, true);
+
+    /*
+     * little-endian unsigned 16-bit
+     */
+    const rawHumidity =
+      value.getUint16(2, true);
+
+
+    /*
+     * 常見格式候選：
+     *
+     * temperature = raw / 100
+     * humidity    = raw / 100
+     */
+
+    const temperature =
+      rawTemp / 100;
+
+    const humidity =
+      rawHumidity / 100;
+
+
+    /*
+     * 只有在合理範圍才顯示，
+     * 避免把未知封包誤當成溫濕度。
+     */
+
+    if(
+      temperature >= -40 &&
+      temperature <= 85
+    ){
+
+      $("temperature").textContent =
+        temperature.toFixed(2);
+
+    }
+
+
+    if(
+      humidity >= 0 &&
+      humidity <= 100
+    ){
+
+      $("humidity").textContent =
+        humidity.toFixed(2);
+
+    }
+
+
+    log(
+      `Candidate temperature=${temperature.toFixed(2)} °C`
+    );
+
+    log(
+      `Candidate humidity=${humidity.toFixed(2)} %`
+    );
+
+  }
+
+
+  /*
+   * 如果第五個 byte 看起來像百分比，
+   * 暫時作為 battery candidate。
+   *
+   * 這只是候選值，不宣稱它一定是電池。
+   */
+
+  if(bytes.length >= 5){
+
+    const candidateBattery =
+      bytes[4];
+
+    if(
+      candidateBattery >= 0 &&
+      candidateBattery <= 100
+    ){
+
+      $("battery").textContent =
+        candidateBattery;
+
+      log(
+        `Candidate battery=${candidateBattery}%`
+      );
+
+    }
+
+  }
+
+}
+
+
+/* --------------------------------------------------
+   Read all readable characteristics
+-------------------------------------------------- */
+
+async function inspectCharacteristics(service){
+
+  const chars =
+    await service.getCharacteristics();
+
+
+  for(const characteristic of chars){
+
+    const properties =
+      characteristic.properties;
+
+
+    if(!properties.read){
+
+      continue;
+
+    }
+
+
+    try{
+
+      const value =
+        await characteristic.readValue();
+
+
+      const hex =
+        dataViewToHex(value);
+
+
+      log(
+        `READ ${characteristic.uuid} = ${hex}`
+      );
+
+
+      /*
+       * 某些 Xiaomi characteristic
+       * 可能直接包含電池百分比。
+       *
+       * 先嘗試單 byte battery candidate。
+       */
+
+      if(value.byteLength === 1){
+
+        const n =
+          value.getUint8(0);
+
+
+        if(n >= 0 && n <= 100){
+
+          /*
+           * 這裡不立即覆蓋 notification
+           * 得到的值，只在目前沒有 battery 時使用。
+           */
+
+          if(
+            $("battery").textContent === "--"
+          ){
+
+            $("battery").textContent =
+              n;
+
+          }
+
+        }
+
+      }
+
+    }catch(error){
+
+      log(
+        `READ ERROR ${characteristic.uuid}: ` +
+        error.message
+      );
+
+    }
+
+  }
+
+}
+
+
+/* --------------------------------------------------
+   GATT exploration
+-------------------------------------------------- */
+
+async function exploreGATT(server){
+
+  const services =
+    await server.getPrimaryServices();
+
+
+  log(
+    `Primary services: ${services.length}`
+  );
+
+
+  let output = "";
+
+
+  for(const service of services){
+
+    output +=
+      `SERVICE\n${service.uuid}\n`;
+
+
+    let chars = [];
+
+
+    try{
+
+      chars =
+        await service.getCharacteristics();
+
+    }catch(error){
+
+      output +=
+        `  ERROR: ${error.message}\n\n`;
+
+      continue;
+
+    }
+
+
+    output +=
+      `  Characteristics: ${chars.length}\n`;
+
+
+    for(const c of chars){
+
+      const p = [];
+
+
+      if(c.properties.broadcast)
+        p.push("broadcast");
+
+      if(c.properties.read)
+        p.push("read");
+
+      if(c.properties.writeWithoutResponse)
+        p.push("writeWithoutResponse");
+
+      if(c.properties.write)
+        p.push("write");
+
+      if(c.properties.notify)
+        p.push("notify");
+
+      if(c.properties.indicate)
+        p.push("indicate");
+
+
+      output +=
+        `    ${c.uuid} [${p.join(", ")}]\n`;
+
+    }
+
+
+    output += "\n";
+
+
+    /*
+     * 對自訂 Xiaomi service 做 readable
+     * characteristic inspection。
+     */
+
+    if(
+      service.uuid.toLowerCase() ===
+      SERVICE_UUID
+    ){
+
+      await inspectCharacteristics(service);
+
+    }
+
+  }
+
+
+  $("gatt").textContent =
+    output || "沒有 primary service";
+
+}
+
+
+/* --------------------------------------------------
+   Connect
+-------------------------------------------------- */
+
+async function connect(){
+
+  log("開始");
+
+
+  if(!window.isSecureContext){
+
+    log(
+      "WARNING: 非 secure context"
+    );
+
+  }
+
+
+  if(
+    !("bluetooth" in navigator)
+  ){
+
+    $("status").innerHTML =
+      '<span class="err">' +
+      '此瀏覽器沒有 Web Bluetooth' +
+      '</span>';
+
+    return;
+
+  }
+
+
+  try{
+
+    log(
+      "呼叫 requestDevice()"
+    );
+
+
+    /*
+     * 這裡非常重要：
+     *
+     * 把你實際發現的 Xiaomi service
+     * 放進 optionalServices。
+     */
+
+    device =
+      await navigator.bluetooth.requestDevice({
+
+        acceptAllDevices: true,
+
+        optionalServices: [
+
+          "generic_access",
+          "generic_attribute",
+          "battery_service",
+
+          SERVICE_UUID
+
+        ]
+
+      });
+
+
+    $("status").innerHTML =
+      '<span class="ok">✓ 已選擇裝置</span>';
+
+
+    $("device").textContent =
+      `name: ${device.name || "(無名稱)"}\n` +
+      `id: ${device.id}`;
+
+
+    log(
+      `選到: ${device.name || "(無名稱)"}`
+    );
+
+    log(
+      `id: ${device.id}`
+    );
+
+
+    device.addEventListener(
+      "gattserverdisconnected",
+      disconnected
+    );
+
+
+    $("connect").disabled = true;
+    $("disconnect").disabled = false;
+
+
+    log(
+      "開始 GATT connect..."
+    );
+
+
+    server =
+      await device.gatt.connect();
+
+
+    log(
+      "GATT connected"
+    );
+
+
+    $("status").innerHTML =
+      '<span class="ok">✓ GATT 已連線</span>';
+
+
+    await exploreGATT(server);
+
+
+    /*
+     * 取得 Xiaomi service
+     */
+
+    log(
+      "取得 EBE0CCB0 service..."
+    );
+
+
+    const service =
+      await server.getPrimaryService(
+        SERVICE_UUID
+      );
+
+
+    log(
+      "取得 EBE0CCBC characteristic..."
+    );
+
+
+    dataCharacteristic =
+      await service.getCharacteristic(
+        DATA_UUID
+      );
+
+
+    /*
+     * 先註冊 event handler
+     */
+
+    dataCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      parseNotification
+    );
+
+
+    /*
+     * 開啟 notification
+     */
+
+    await dataCharacteristic.startNotifications();
+
+
+    log(
+      "✓ EBE0CCBC notification 已啟用"
+    );
+
+
+    $("status").innerHTML =
+      '<span class="ok">' +
+      '✓ 已連線，等待感測器資料...' +
+      '</span>';
+
+
+  }catch(error){
+
+    console.error(error);
+
+
+    log(
+      `ERROR: ${error.name} — ${error.message}`
+    );
+
+
+    $("status").innerHTML =
+      '<span class="err">' +
+      `${error.name} — ${error.message}` +
+      '</span>';
+
+
+    $("connect").disabled = false;
+    $("disconnect").disabled = true;
+
+  }
+
+}
+
+
+/* --------------------------------------------------
+   Disconnect
+-------------------------------------------------- */
+
+function disconnected(){
+
+  log(
+    "GATT disconnected"
+  );
+
+
+  $("status").textContent =
+    "已斷線";
+
+
+  $("connect").disabled = false;
+  $("disconnect").disabled = true;
+
+
+  dataCharacteristic = null;
+  server = null;
+
+}
+
+
+/* --------------------------------------------------
+   Manual disconnect
+-------------------------------------------------- */
+
+async function disconnect(){
+
+  try{
+
+    if(dataCharacteristic){
+
+      try{
+
+        await dataCharacteristic.stopNotifications();
+
+      }catch(e){}
+
+    }
+
+
+    if(
+      device &&
+      device.gatt.connected
+    ){
+
+      device.gatt.disconnect();
+
+    }
+
+  }catch(error){
+
+    log(
+      `Disconnect ERROR: ${error.message}`
+    );
+
+  }
+
+}
+
+
+/* --------------------------------------------------
+   Buttons
+-------------------------------------------------- */
+
+$("connect").addEventListener(
+  "click",
+  connect
+);
+
+
+$("disconnect").addEventListener(
+  "click",
+  disconnect
+);
+
+
+/* --------------------------------------------------
+   Startup
+-------------------------------------------------- */
+
+log("Ready");
+
+log(
+  "Web Bluetooth = " +
+  ("bluetooth" in navigator)
+);
+
+log(
+  "Secure Context = " +
+  location.isSecureContext
+);
+
+</script>
+
+</body>
+</html>
