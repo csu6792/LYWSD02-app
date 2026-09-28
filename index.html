@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>LYWSD02MMC BLE 控制台 v2</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#111827;background:#f3f4f6}
+*{box-sizing:border-box}body{margin:0;padding:20px}.wrap{max-width:820px;margin:auto}
+.card{background:#fff;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 4px 18px #0000000d}
+h1{font-size:25px;margin:0 0 6px}h3{margin-top:0}.muted{color:#6b7280}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;cursor:pointer;background:#111827;color:#fff;margin:4px 4px 4px 0}
+button.secondary{background:#e5e7eb;color:#111827}button:disabled{opacity:.45;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{padding:18px 10px;background:#f9fafb;border-radius:14px;text-align:center}
+.metric .v{font-size:30px;font-weight:700}.metric .k{color:#6b7280;margin-top:4px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:8px}.dot{width:10px;height:10px;border-radius:50%;background:#9ca3af}.ok{background:#16a34a}.bad{background:#dc2626}
+.log{height:250px;overflow:auto;background:#111827;color:#d1d5db;border-radius:12px;padding:12px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+input{padding:10px;border:1px solid #d1d5db;border-radius:10px;font:inherit}
+details{margin-top:12px}.warn{background:#fff7ed;border-left:4px solid #f97316;padding:12px;border-radius:8px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.metric .v{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>LYWSD02MMC BLE 控制台</h1>
+    <div class="muted">Web Bluetooth · 單一 HTML · GitHub Pages</div>
+    <p class="status"><span id="dot" class="dot"></span><span id="status">未連線</span></p>
+    <div class="row">
+      <button id="connect">🔵 選擇並連接裝置</button>
+      <button id="disconnect" class="secondary" disabled>斷線</button>
+    </div>
+    <div class="warn">
+      按下連接後，Chrome/Edge 會開啟系統 Bluetooth 選擇器。請選你的 <b>LYWSD02 / LYWSD02MMC</b>。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="metric"><div id="temp" class="v">--</div><div class="k">溫度 °C</div></div>
+      <div class="metric"><div id="hum" class="v">--</div><div class="k">濕度 %</div></div>
+      <div class="metric"><div id="bat" class="v">--</div><div class="k">電量 %</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>裝置</h3>
+    <div id="info" class="muted">尚未連接</div>
+  </div>
+
+  <div class="card">
+    <h3>時間</h3>
+    <div class="row">
+      <button id="sync" disabled>⏰ 同步目前時間</button>
+      <input id="manualTime" type="datetime-local">
+      <button id="syncManual" class="secondary" disabled>同步指定時間</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>溫度單位</h3>
+    <button id="celsius" disabled>°C</button>
+    <button id="fahrenheit" class="secondary" disabled>°F</button>
+  </div>
+
+  <div class="card">
+    <h3>BLE Log</h3>
+    <div id="log" class="log"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/*
+ * LYWSD02 / LYWSD02MMC
+ * Verified public UUIDs:
+ *   Environmental data: ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6
+ *   Time service:        ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6
+ *   Time characteristic: ebe0ccb7-7a0a-4b0c-8a1a-6ff2997da3a6
+ *   Unit characteristic: ebe0ccbe-7a0a-4b0c-8a1a-6ff2997da3a6
+ */
+const UUID={
+  SERVICE:"ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6",
+  DATA:"ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6",
+  TIME:"ebe0ccb7-7a0a-4b0c-8a1a-6ff2997da3a6",
+  UNIT:"ebe0ccbe-7a0a-4b0c-8a1a-6ff2997da3a6",
+  BATTERY_SERVICE:"0000180f-0000-1000-8000-00805f9b34fb",
+  BATTERY_LEVEL:"00002a19-0000-1000-8000-00805f9b34fb"
+};
+
+let device=null,server=null,dataChar=null,timeChar=null,unitChar=null,disconnecting=false;
+const $=id=>document.getElementById(id);
+function log(s){$("log").textContent+=`[${new Date().toLocaleTimeString()}] ${s}\n`;$("log").scrollTop=$("log").scrollHeight}
+function status(s,ok=false){$("status").textContent=s;$("dot").className="dot "+(ok?"ok":"")}
+function hex(v){return [...new Uint8Array(v.buffer,v.byteOffset,v.byteLength)].map(x=>x.toString(16).padStart(2,"0")).join(" ")}
+function enableConnected(x){
+  $("disconnect").disabled=!x;$("sync").disabled=!x;$("syncManual").disabled=!x;
+  $("celsius").disabled=!x;$("fahrenheit").disabled=!x;
+}
+function parseData(v){
+  if(v.byteLength<3){log("資料長度異常: "+v.byteLength);return}
+  const t=v.getInt16(0,true)/100,h=v.getUint8(2);
+  $("temp").textContent=t.toFixed(2);$("hum").textContent=h;
+  log(`溫濕度: ${t.toFixed(2)} °C / ${h}%  [${hex(v)}]`);
+}
+async function readBattery(){
+  try{
+    const svc=await server.getPrimaryService(UUID.BATTERY_SERVICE);
+    const c=await svc.getCharacteristic(UUID.BATTERY_LEVEL);
+    const v=await c.readValue();$("bat").textContent=v.getUint8(0);log("電量: "+v.getUint8(0)+"%");
+  }catch(e){$("bat").textContent="--";log("電量讀取不可用: "+e.message)}
+}
+function timeBytes(d){
+  const unix=Math.floor(d.getTime()/1000);
+  const b=new ArrayBuffer(5),v=new DataView(b);
+  v.setUint32(0,unix,true);
+  let off=Math.round(-d.getTimezoneOffset()/60);
+  off=Math.max(-128,Math.min(127,off));v.setInt8(4,off);
+  return new Uint8Array(b);
+}
+async function syncTime(d){
+  if(!timeChar)throw new Error("時間 characteristic 尚未取得");
+  const bytes=timeBytes(d);
+  await timeChar.writeValue(bytes);
+  log("時間寫入: "+d.toLocaleString()+" ["+hex({buffer:bytes.buffer,byteOffset:0,byteLength:bytes.length})+"]");
+}
+async function setUnit(f){
+  if(!unitChar)throw new Error("單位 characteristic 尚未取得");
+  await unitChar.writeValue(new Uint8Array([f?1:0]));
+  log("裝置單位設定: "+(f?"°F":"°C"));
+}
+async function connect(){
+  if(!navigator.bluetooth){alert("此瀏覽器沒有 Web Bluetooth。請用 Chrome/Edge。");return}
+  try{
+    log("開啟 BLE 裝置選擇器...");
+    /*
+     * IMPORTANT:
+     * Do not filter by name/service here. Some LYWSD02MMC advertisements
+     * do not expose the custom service in the advertising packet.
+     */
+    device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[UUID.SERVICE,UUID.BATTERY_SERVICE]
+    });
+    log("選擇裝置: "+(device.name||"(無名稱)")+" / "+device.id);
+    $("info").textContent=(device.name||"Unknown")+" · "+device.id;
+    device.addEventListener("gattserverdisconnected",onDisconnected);
+    server=await device.gatt.connect();
+    status("已連線",true);enableConnected(true);
+    log("GATT connected");
+
+    const svc=await server.getPrimaryService(UUID.SERVICE);
+    log("取得 Xiaomi custom service");
+
+    dataChar=await svc.getCharacteristic(UUID.DATA);
+    try{
+      await dataChar.startNotifications();
+      dataChar.addEventListener("characteristicvaluechanged",e=>parseData(e.target.value));
+      log("溫濕度 Notify 已啟用");
+    }catch(e){log("Notify 啟用失敗: "+e.message)}
+    try{parseData(await dataChar.readValue())}catch(e){log("溫濕度 Read 失敗: "+e.message)}
+
+    try{
+      timeChar=await svc.getCharacteristic(UUID.TIME);
+      log("時間 characteristic OK");
+    }catch(e){log("時間 characteristic 取得失敗: "+e.message)}
+
+    try{
+      unitChar=await svc.getCharacteristic(UUID.UNIT);
+      log("單位 characteristic OK");
+    }catch(e){log("單位 characteristic 取得失敗: "+e.message)}
+
+    await readBattery();
+  }catch(e){
+    log("錯誤 "+e.name+": "+e.message);
+    status("未連線");enableConnected(false);
+    if(e.name==="NotFoundError")log("使用者取消了裝置選擇");
+    else alert("連線失敗：\n"+e.message);
+  }
+}
+function onDisconnected(){
+  if(disconnecting)return;
+  status("已斷線");enableConnected(false);
+  server=null;dataChar=null;timeChar=null;unitChar=null;
+  log("裝置已斷線");
+}
+$("connect").onclick=connect;
+$("disconnect").onclick=()=>{if(device?.gatt?.connected){disconnecting=true;device.gatt.disconnect();setTimeout(()=>disconnecting=false,500)}};
+$("sync").onclick=async()=>{try{await syncTime(new Date());alert("時間已同步")}catch(e){log("同步失敗: "+e.message);alert(e.message)}};
+$("syncManual").onclick=async()=>{if(!$("manualTime").value)return alert("請選擇時間");try{await syncTime(new Date($("manualTime").value));alert("時間已同步")}catch(e){log("同步失敗: "+e.message);alert(e.message)}};
+$("celsius").onclick=async()=>{try{await setUnit(false)}catch(e){log(e.message);alert(e.message)}};
+$("fahrenheit").onclick=async()=>{try{await setUnit(true)}catch(e){log(e.message);alert(e.message)}};
+(()=>{const d=new Date();d.setSeconds(0,0);$("manualTime").value=d.toISOString().slice(0,16)})();
+log("Ready — 請按「選擇並連接裝置」。");
+</script>
+</body>
+</html>
