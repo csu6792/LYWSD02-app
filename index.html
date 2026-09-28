@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>LYWSD02MMC BLE 控制台</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#111827;background:#f3f4f6}
+body{margin:0;padding:20px}.wrap{max-width:760px;margin:auto}
+.card{background:white;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 4px 18px #0000000d}
+h1{font-size:25px;margin:0 0 6px}.muted{color:#6b7280}
+button{border:0;border-radius:12px;padding:11px 16px;font-size:15px;cursor:pointer;background:#111827;color:white;margin:4px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.metric{padding:18px 10px;background:#f9fafb;border-radius:14px;text-align:center}
+.metric .v{font-size:30px;font-weight:700}.metric .k{color:#6b7280;margin-top:4px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:8px}.dot{width:10px;height:10px;border-radius:50%;background:#9ca3af}.ok{background:#16a34a}.bad{background:#dc2626}
+.log{height:210px;overflow:auto;background:#111827;color:#d1d5db;border-radius:12px;padding:12px;font:12px ui-monospace,monospace;white-space:pre-wrap}
+input{padding:10px;border:1px solid #d1d5db;border-radius:10px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.metric .v{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>LYWSD02MMC BLE 控制台</h1>
+    <div class="muted">純 HTML / Web Bluetooth，不需要米家帳號或後端。</div>
+    <p class="status"><span id="dot" class="dot"></span><span id="status">未連線</span></p>
+    <div class="row">
+      <button id="connect">🔵 連接裝置</button>
+      <button id="disconnect" disabled>斷線</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="metric"><div id="temp" class="v">--</div><div class="k">溫度 °C</div></div>
+      <div class="metric"><div id="hum" class="v">--</div><div class="k">濕度 %</div></div>
+      <div class="metric"><div id="bat" class="v">--</div><div class="k">電量 %</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>裝置資訊</h3>
+    <div id="info" class="muted">尚未連接</div>
+  </div>
+
+  <div class="card">
+    <h3>時間</h3>
+    <div class="row">
+      <input id="manualTime" type="datetime-local">
+      <button id="sync" disabled>⏰ 同步目前時間</button>
+      <button id="syncManual" disabled>同步指定時間</button>
+    </div>
+    <p class="muted">同步使用瀏覽器所在裝置的本地時間。</p>
+  </div>
+
+  <div class="card">
+    <h3>溫度單位</h3>
+    <div class="row">
+      <button id="celsius" disabled>°C</button>
+      <button id="fahrenheit" disabled>°F</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>BLE Log</h3>
+    <div id="log" class="log"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// LYWSD02 / LYWSD02MMC known GATT UUIDs.
+const UUID = {
+  ENV_SERVICE: "ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6",
+  ENV_DATA:    "ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6",
+  TIME_SERVICE:"ebe0ccb0-7a0a-4b0c-8a1a-6ff2997da3a6",
+  TIME:        "ebe0ccb7-7a0a-4b0c-8a1a-6ff2997da3a6",
+  UNIT:        "ebe0ccbe-7a0a-4b0c-8a1a-6ff2997da3a6"
+};
+
+let device=null, server=null, envChar=null, timeChar=null, unitChar=null;
+const $=id=>document.getElementById(id);
+function log(s){ $("log").textContent += `[${new Date().toLocaleTimeString()}] ${s}\n`; $("log").scrollTop=$("log").scrollHeight; }
+function status(s, ok=false){$("status").textContent=s;$("dot").className="dot "+(ok?"ok":"");}
+function hex(a){return [...new Uint8Array(a)].map(x=>x.toString(16).padStart(2,"0")).join(" ");}
+
+function parseEnv(v){
+  const b=new DataView(v.buffer,v.byteOffset,v.byteLength);
+  if(v.byteLength < 3) return;
+  const t=b.getInt16(0,true)/100;
+  const h=b.getUint8(2);
+  $("temp").textContent=t.toFixed(2);
+  $("hum").textContent=h;
+  log(`ENV ${hex(v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength))} → ${t.toFixed(2)} °C / ${h}%`);
+}
+
+async function readBattery(){
+  // Battery Service is standard BLE. Not every firmware exposes it.
+  try{
+    const svc=await server.getPrimaryService("battery_service");
+    const c=await svc.getCharacteristic("battery_level");
+    const v=await c.readValue();
+    $("bat").textContent=v.getUint8(0);
+    log(`Battery ${v.getUint8(0)}%`);
+  }catch(e){ log("Battery characteristic unavailable: "+e.message); }
+}
+
+function bytesForDate(d){
+  // Xiaomi LYWSD02 time format: Unix timestamp (little endian) + signed UTC offset hours.
+  const unix=Math.floor(d.getTime()/1000);
+  const out=new ArrayBuffer(5), v=new DataView(out);
+  v.setUint32(0,unix,true);
+  // Local UTC offset at that date, in hours east of UTC.
+  const offsetMinutes=-d.getTimezoneOffset();
+  let hours=Math.round(offsetMinutes/60);
+  if(hours < -128) hours=-128; if(hours>127) hours=127;
+  v.setInt8(4,hours);
+  return out;
+}
+
+async function syncTime(date){
+  if(!timeChar) throw new Error("時間 characteristic 不可用");
+  const bytes=bytesForDate(date);
+  await timeChar.writeValue(bytes);
+  log(`時間已寫入：${date.toLocaleString()} / ${hex(bytes)}`);
+}
+
+async function setUnit(isF){
+  if(!unitChar) throw new Error("單位 characteristic 不可用");
+  // Known LYWSD02 web implementations use 0x00 for Celsius, 0x01 for Fahrenheit.
+  await unitChar.writeValue(new Uint8Array([isF?1:0]));
+  log(`溫度單位已設定為 ${isF?"°F":"°C"}`);
+}
+
+async function connect(){
+  if(!("bluetooth" in navigator)){alert("此瀏覽器不支援 Web Bluetooth。請用桌面版 Chrome/Edge 等 Chromium 瀏覽器。");return;}
+  try{
+    log("開啟 Bluetooth 裝置選擇器...");
+    device=await navigator.bluetooth.requestDevice({
+      filters:[
+        {namePrefix:"LYWSD02"},
+        {namePrefix:"Mijia"},
+        {services:[UUID.ENV_SERVICE]}
+      ],
+      optionalServices:[
+        UUID.ENV_SERVICE,
+        UUID.TIME_SERVICE,
+        "battery_service"
+      ]
+    });
+    device.addEventListener("gattserverdisconnected",onDisconnected);
+    $("info").textContent=`${device.name||"LYWSD02MMC"}${device.id?" · "+device.id:""}`;
+    log(`選擇：${device.name||"未知裝置"}`);
+    server=await device.gatt.connect();
+    status("已連線",true);
+    $("connect").disabled=true;$("disconnect").disabled=false;
+
+    const envSvc=await server.getPrimaryService(UUID.ENV_SERVICE);
+    envChar=await envSvc.getCharacteristic(UUID.ENV_DATA);
+    try{
+      await envChar.startNotifications();
+      envChar.addEventListener("characteristicvaluechanged",e=>parseEnv(e.target.value));
+      log("已啟用溫濕度通知");
+    }catch(e){log("Notify 失敗，嘗試 Read: "+e.message);}
+    try{
+      parseEnv(await envChar.readValue());
+    }catch(e){log("讀取環境資料失敗: "+e.message);}
+
+    try{
+      const ts=await server.getPrimaryService(UUID.TIME_SERVICE);
+      timeChar=await ts.getCharacteristic(UUID.TIME);
+      $("sync").disabled=false;$("syncManual").disabled=false;
+      log("時間控制已就緒");
+    }catch(e){log("時間 characteristic 不可用: "+e.message);}
+
+    try{
+      // Unit characteristic is commonly under the same custom service.
+      unitChar=await envSvc.getCharacteristic(UUID.UNIT);
+      $("celsius").disabled=false;$("fahrenheit").disabled=false;
+      log("溫度單位控制已就緒");
+    }catch(e){log("單位 characteristic 不可用: "+e.message);}
+
+    await readBattery();
+  }catch(e){
+    log("連線錯誤: "+e.name+" — "+e.message);
+    status("未連線");
+    if(e.name!=="NotFoundError") alert("連線失敗：\n"+e.message);
+  }
+}
+
+function onDisconnected(){
+  status("已斷線");
+  $("connect").disabled=false;$("disconnect").disabled=true;
+  $("sync").disabled=true;$("syncManual").disabled=true;
+  $("celsius").disabled=true;$("fahrenheit").disabled=true;
+  log("裝置已斷線");
+  server=null;envChar=null;timeChar=null;unitChar=null;
+}
+
+$("connect").onclick=connect;
+$("disconnect").onclick=()=>{if(device?.gatt?.connected)device.gatt.disconnect();};
+$("sync").onclick=async()=>{try{await syncTime(new Date());}catch(e){log("同步失敗: "+e.message);alert(e.message);}};
+$("syncManual").onclick=async()=>{
+  const s=$("manualTime").value;
+  if(!s)return alert("請先選擇時間");
+  try{await syncTime(new Date(s));}catch(e){log("同步失敗: "+e.message);alert(e.message);}
+};
+$("celsius").onclick=async()=>{try{await setUnit(false);}catch(e){log(e.message);}};
+$("fahrenheit").onclick=async()=>{try{await setUnit(true);}catch(e){log(e.message);}};
+
+// Default manual time = now, rounded to minute.
+(()=>{const d=new Date();d.setSeconds(0,0);$("manualTime").value=d.toISOString().slice(0,16);})();
+log("Ready. 請按「連接裝置」。");
+</script>
+</body>
+</html>
